@@ -1,4 +1,4 @@
-// Инициализация Firebase
+// ===== Инициализация Firebase =====
 const firebaseConfig = {
   apiKey: "AIzaSyDtpFytzqGoE8w1cK_uekt3nnNGN4vV2Y8",
   authDomain: "auto-sos-8446f.firebaseapp.com",
@@ -12,60 +12,68 @@ const firebaseConfig = {
 firebase.initializeApp(firebaseConfig);
 const db = firebase.database();
 
-// Попап и форма — объявляем до использования
-const regPopup = document.getElementById('regPopup');
-const regForm = document.getElementById('regForm');
+// ===== Дожидаемся загрузки страницы =====
+document.addEventListener('DOMContentLoaded', () => {
+  const regPopup = document.getElementById('regPopup');
+  const regForm = document.getElementById('regForm');
 
-// Получение данных пользователя Telegram
-const tgUser = Telegram?.WebApp?.initDataUnsafe?.user;
-
-if (!tgUser) {
-  alert('Не удалось получить данные пользователя Telegram.');
-  throw new Error('Нет данных пользователя Telegram');
-}
-
-const tgId = tgUser.id;
-const tgName = tgUser.first_name;
-const tgUsername = tgUser.username;
-
-console.log('ID:', tgId, 'Имя:', tgName, 'Username:', tgUsername);
-
-// Проверка регистрации в Firebase
-db.ref('users/' + tgId).get().then(snapshot => {
-  if (snapshot.exists()) {
-    console.log('Пользователь зарегистрирован:', snapshot.val());
-    initApp(snapshot.val());
-  } else {
-    // Показываем попап регистрации
-    regPopup.classList.add('show');
+  const webApp = Telegram?.WebApp;
+  if (!webApp) {
+    alert('Не удалось найти Telegram WebApp.');
+    return;
   }
-}).catch(err => console.error(err));
 
-// Обработка формы регистрации
-regForm.addEventListener('submit', (e) => {
-  e.preventDefault();
-  const formData = new FormData(regForm);
-  const data = {
-    person: formData.get('person'),
-    car: formData.get('car'),
-    carPlate: formData.get('carPlate'),
-    phone: formData.get('phone')
-  };
+  webApp.ready(); // уведомляем Telegram, что страница готова
 
-  db.ref('users/' + tgId).set(data)
-    .then(() => {
-      alert('Регистрация успешна!');
-      regPopup.classList.remove('show');
-      initApp(data);
-    })
-    .catch(err => console.error(err));
+  const tgUser = webApp.initDataUnsafe?.user;
+  if (!tgUser) {
+    alert('Не удалось получить данные пользователя Telegram.');
+    return;
+  }
+
+  const tgId = tgUser.id;
+  const tgName = tgUser.first_name;
+  const tgUsername = tgUser.username;
+
+  console.log('ID:', tgId, 'Имя:', tgName, 'Username:', tgUsername);
+
+  // ===== Проверка регистрации =====
+  db.ref('users/' + tgId).get()
+    .then(snapshot => {
+      if (snapshot.exists()) {
+        console.log('Пользователь зарегистрирован:', snapshot.val());
+        initApp(snapshot.val());
+      } else {
+        regPopup.classList.add('show'); // показываем попап
+      }
+    }).catch(err => console.error(err));
+
+  // ===== Обработка формы регистрации =====
+  regForm.addEventListener('submit', (e) => {
+    e.preventDefault();
+    const formData = new FormData(regForm);
+    const data = {
+      person: formData.get('person'),
+      car: formData.get('car'),
+      carPlate: formData.get('carPlate'),
+      phone: formData.get('phone')
+    };
+
+    db.ref('users/' + tgId).set(data)
+      .then(() => {
+        alert('Регистрация успешна!');
+        regPopup.classList.remove('show');
+        initApp(data);
+      })
+      .catch(err => console.error(err));
+  });
+
+  // ===== Функция инициализации приложения =====
+  function initApp(userData) {
+    console.log('Добро пожаловать,', userData.person);
+    window.location.href = '../page1/page1.html';
+  }
 });
-
-// Функция инициализации приложения после регистрации
-function initApp(userData) {
-  console.log('Добро пожаловать,', userData.person);
-  window.location.href = '../page1/page1.html';
-}
 
 
 
@@ -178,3 +186,4 @@ carInput.addEventListener('input', (e) => {
 
   e.target.value = value;
 });
+
