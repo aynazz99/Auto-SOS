@@ -1,28 +1,6 @@
-// ==== Дебаг-блок на весь экран ====
-const debugDiv = document.createElement('div');
-debugDiv.style.position = 'fixed';
-debugDiv.style.top = '0';
-debugDiv.style.left = '0';
-debugDiv.style.width = '100%';
-debugDiv.style.height = '100%';
-debugDiv.style.overflowY = 'auto';
-debugDiv.style.backgroundColor = 'rgba(0,0,0,0.7)';
-debugDiv.style.color = 'white';
-debugDiv.style.fontSize = '14px';
-debugDiv.style.zIndex = '9999';
-debugDiv.style.padding = '10px';
-document.body.appendChild(debugDiv);
-
-function debug(msg) {
-  const p = document.createElement('p');
-  p.textContent = msg;
-  debugDiv.appendChild(p);
-  debugDiv.scrollTop = debugDiv.scrollHeight; // авто-прокрутка
-}
-
-debug("✅ DOM полностью загружен");
-
-// ==== Инициализация Firebase ====
+// =======================
+// 1. Настройка Firebase
+// =======================
 const firebaseConfig = {
   apiKey: "AIzaSyDtpFytzqGoE8w1cK_uekt3nnNGN4vV2Y8",
   authDomain: "auto-sos-8446f.firebaseapp.com",
@@ -33,55 +11,93 @@ const firebaseConfig = {
   appId: "1:326847407685:web:bfc1434124e1feed3ce52c",
   measurementId: "G-0YL7B1NZT1"
 };
+
 firebase.initializeApp(firebaseConfig);
 const db = firebase.database();
-debug("✅ Firebase инициализирован");
 
-// ==== Telegram Mini App ====
-if (!window.Telegram || !Telegram.WebApp) {
-  debug("⚠ Telegram WebApp недоступен");
+// =======================
+// 2. Дебаг на экране
+// =======================
+const debugDiv = document.createElement("div");
+debugDiv.style.position = "fixed";
+debugDiv.style.bottom = "0";
+debugDiv.style.left = "0";
+debugDiv.style.width = "100%";
+debugDiv.style.maxHeight = "150px";
+debugDiv.style.overflowY = "auto";
+debugDiv.style.background = "rgba(0,0,0,0.7)";
+debugDiv.style.color = "#fff";
+debugDiv.style.fontSize = "12px";
+debugDiv.style.fontFamily = "monospace";
+debugDiv.style.zIndex = "9999";
+debugDiv.style.padding = "5px";
+document.body.appendChild(debugDiv);
+
+function debugLog(message) {
+  const p = document.createElement("div");
+  p.textContent = message;
+  debugDiv.appendChild(p);
+  debugDiv.scrollTop = debugDiv.scrollHeight;
 }
 
-// Ждём готовности Telegram WebApp
-if (Telegram?.WebApp?.ready) {
-  Telegram.WebApp.ready();
-  debug("✅ Telegram WebApp готов");
-}
-
-// ==== Попытка получить пользователя Telegram ====
-const tgUser = Telegram?.WebApp?.initDataUnsafe?.user;
-debug("tgUser: " + (tgUser ? JSON.stringify(tgUser) : "undefined"));
-
-if (!tgUser) {
-  debug("⚠ Не удалось получить данные пользователя Telegram");
-  alert("Ошибка: данные Telegram недоступны");
-  throw new Error("Нет данных пользователя Telegram");
-}
-
-const tgId = tgUser.id;       
-const tgName = tgUser.first_name;
-const tgUsername = tgUser.username;
-debug(`ID: ${tgId}, Имя: ${tgName}, Username: ${tgUsername}`);
-
-// ==== Попап и форма регистрации ====
+// =======================
+// 3. Попап и форма регистрации
+// =======================
 const regPopup = document.getElementById('regPopup');
 const regForm = document.getElementById('regForm');
 
-// ==== Проверка регистрации в Firebase ====
-db.ref('users/' + tgId).get()
-  .then(snapshot => {
+// =======================
+// 4. Функция инициализации приложения после регистрации
+// =======================
+function initApp(userData) {
+  debugLog(`Добро пожаловать, ${userData.person}`);
+  // здесь будет редирект:
+  window.location.href = '../page1/page1.html';
+}
+
+// =======================
+// 5. Ждём Telegram WebApp
+// =======================
+let tgUser = null;
+let tgId = null;
+
+function waitForTelegram(retries = 20) {
+  if (window.Telegram?.WebApp?.initDataUnsafe?.user) {
+    tgUser = window.Telegram.WebApp.initDataUnsafe.user;
+    tgId = tgUser.id.toString();
+    debugLog(`✅ Telegram WebApp доступен. ID: ${tgId}, Name: ${tgUser.first_name}`);
+    checkRegistration();
+  } else if (retries > 0) {
+    debugLog(`⌛ Ждём Telegram WebApp... (${retries})`);
+    setTimeout(() => waitForTelegram(retries - 1), 300);
+  } else {
+    debugLog("⚠ Telegram WebApp недоступен");
+    alert("Telegram WebApp недоступен. Откройте сайт внутри Telegram.");
+  }
+}
+
+// =======================
+// 6. Проверка регистрации пользователя в Firebase
+// =======================
+async function checkRegistration() {
+  try {
+    const snapshot = await db.ref(`users/${tgId}`).get();
     if (snapshot.exists()) {
-      debug("✅ Пользователь зарегистрирован: " + JSON.stringify(snapshot.val()));
+      debugLog("✅ Пользователь зарегистрирован: " + JSON.stringify(snapshot.val()));
       initApp(snapshot.val());
     } else {
-      debug("ℹ Пользователь не найден, показываем попап регистрации");
+      debugLog("⚠ Пользователь не найден. Показываем попап регистрации.");
       regPopup.classList.add('show');
     }
-  })
-  .catch(err => debug("❌ Ошибка Firebase: " + err));
+  } catch (err) {
+    debugLog("❌ Ошибка проверки Firebase: " + err);
+  }
+}
 
-// ==== Обработка формы регистрации ====
-regForm.addEventListener('submit', (e) => {
+// =======================
+// 7. Обработка формы регистрации
+// =======================
+regForm.addEventListener('submit', async (e) => {
   e.preventDefault();
   const formData = new FormData(regForm);
   const data = {
@@ -91,21 +107,24 @@ regForm.addEventListener('submit', (e) => {
     phone: formData.get('phone')
   };
 
-  db.ref('users/' + tgId).set(data)
-    .then(() => {
-      debug("✅ Регистрация успешна: " + JSON.stringify(data));
-      regPopup.classList.remove('show');
-      initApp(data);
-    })
-    .catch(err => debug("❌ Ошибка при записи в Firebase: " + err));
+  try {
+    await db.ref(`users/${tgId}`).set(data);
+    debugLog("✅ Регистрация успешна");
+    regPopup.classList.remove('show');
+    initApp(data);
+  } catch (err) {
+    debugLog("❌ Ошибка при регистрации: " + err);
+  }
 });
 
-// ==== Функция инициализации приложения после регистрации ====
-function initApp(userData) {
-  debug("🎉 Добро пожаловать, " + userData.person);
-  // Здесь можно редиректить на страницу заявок:
-  window.location.href = '../page1/page1.html';
-}
+// =======================
+// 8. Стартуем ожидание Telegram после DOMContentLoaded
+// =======================
+document.addEventListener("DOMContentLoaded", () => {
+  debugLog("✅ DOM полностью загружен");
+  waitForTelegram();
+});
+
 
 
 
@@ -221,6 +240,7 @@ carInput.addEventListener('input', (e) => {
 
   e.target.value = value;
 });
+
 
 
 
