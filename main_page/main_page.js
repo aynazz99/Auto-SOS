@@ -12,68 +12,76 @@ const firebaseConfig = {
 firebase.initializeApp(firebaseConfig);
 const db = firebase.database();
 
-// ===== Дожидаемся загрузки страницы =====
-document.addEventListener("DOMContentLoaded", async () => {
-  // Получаем пользователя Telegram или заглушку
-  const tgUser = window.Telegram?.WebApp?.initDataUnsafe?.user || {
-    id: "test_user_123",
-    first_name: "Тест",
-    username: "testuser"
-  };
+// ===== Дебаг прямо на странице =====
+function debugLog(msg) {
+  const debugDiv = document.getElementById('debug');
+  if (!debugDiv) return;
+  const time = new Date().toLocaleTimeString();
+  debugDiv.innerHTML += `[${time}] ${msg}<br>`;
+  debugDiv.scrollTop = debugDiv.scrollHeight;
+}
 
-  if (!tgUser || !tgUser.id) {
-    alert("Ошибка: данные Telegram недоступны");
-    return;
-  }
+// ===== Получение данных Telegram =====
+const tgUser = Telegram?.WebApp?.initDataUnsafe?.user;
+if (!tgUser) {
+  alert('Ошибка: данные Telegram недоступны!');
+  debugLog('❌ Нет данных Telegram');
+  throw new Error('Нет данных Telegram');
+}
 
-  const tgId = tgUser.id.toString();
+const tgId = tgUser.id;
+const tgName = tgUser.first_name;
+const tgUsername = tgUser.username;
 
-  // Попап и форма
-  const regPopup = document.getElementById("regPopup");
-  const regForm = document.getElementById("regForm");
+debugLog(`✅ Telegram получен: ID=${tgId}, Name=${tgName}, Username=${tgUsername}`);
 
-  try {
-    const userRef = db.ref(`users/${tgId}`);
-    const snapshot = await userRef.get();
+// ===== Элементы формы =====
+const regPopup = document.getElementById('regPopup');
+const regForm = document.getElementById('regForm');
+const carPlateInput = document.querySelector('.car-plate');
+const nameInput = document.querySelector('.person-name');
+const phoneInput = document.querySelector('.phone');
+const carInput = document.querySelector('.car');
 
+// ===== Проверка регистрации =====
+db.ref('users/' + tgId).get()
+  .then(snapshot => {
     if (snapshot.exists()) {
-      console.log("Пользователь зарегистрирован:", snapshot.val());
+      debugLog("✅ Пользователь зарегистрирован: " + JSON.stringify(snapshot.val()));
       initApp(snapshot.val());
     } else {
-      // Если пользователя нет — показываем попап регистрации
-      regPopup.classList.add("show");
+      debugLog("ℹ️ Пользователь не найден, показываем попап регистрации");
+      regPopup.classList.add('show');
     }
-  } catch (err) {
-    console.error(err);
-  }
+  })
+  .catch(err => debugLog("❌ Ошибка Firebase: " + err));
 
-  // Обработка формы регистрации
-  regForm.addEventListener("submit", async (e) => {
-    e.preventDefault();
-    const formData = new FormData(regForm);
-    const data = {
-      person: formData.get("person"),
-      car: formData.get("car"),
-      carPlate: formData.get("carPlate"),
-      phone: formData.get("phone")
-    };
+// ===== Обработка формы регистрации =====
+regForm.addEventListener('submit', (e) => {
+  e.preventDefault();
+  const formData = new FormData(regForm);
+  const data = {
+    person: formData.get('person'),
+    car: formData.get('car'),
+    carPlate: formData.get('carPlate'),
+    phone: formData.get('phone')
+  };
 
-    try {
-      await db.ref(`users/${tgId}`).set(data);
-      alert("Регистрация успешна!");
-      regPopup.classList.remove("show");
+  db.ref('users/' + tgId).set(data)
+    .then(() => {
+      debugLog("✅ Регистрация успешна: " + JSON.stringify(data));
+      regPopup.classList.remove('show');
       initApp(data);
-    } catch (err) {
-      console.error(err);
-    }
-  });
-
-  function initApp(userData) {
-    console.log("Добро пожаловать,", userData.person);
-    window.location.href = "../page1/page1.html";
-  }
+    })
+    .catch(err => debugLog("❌ Ошибка при регистрации: " + err));
 });
 
+// ===== Инициализация приложения после регистрации =====
+function initApp(userData) {
+  debugLog(`🎉 Добро пожаловать, ${userData.person}`);
+  // Перенаправление на страницу заявок
+  window.location.href = '../page1/page1.html';
+}
 
 
 
@@ -185,5 +193,6 @@ carInput.addEventListener('input', (e) => {
 
   e.target.value = value;
 });
+
 
 
