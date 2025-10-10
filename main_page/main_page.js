@@ -1,129 +1,94 @@
-// =======================
-// 1. Настройка Firebase
-// =======================
-const firebaseConfig = {
-  apiKey: "AIzaSyDtpFytzqGoE8w1cK_uekt3nnNGN4vV2Y8",
-  authDomain: "auto-sos-8446f.firebaseapp.com",
-  databaseURL: "https://auto-sos-8446f-default-rtdb.firebaseio.com",
-  projectId: "auto-sos-8446f",
-  storageBucket: "auto-sos-8446f.firebasestorage.app",
-  messagingSenderId: "326847407685",
-  appId: "1:326847407685:web:bfc1434124e1feed3ce52c",
-  measurementId: "G-0YL7B1NZT1"
-};
+document.addEventListener('DOMContentLoaded', async () => {
+  const preloader = document.getElementById('preloader');
 
-firebase.initializeApp(firebaseConfig);
-const db = firebase.database();
-
-// =======================
-// 2. Дебаг на экране
-// =======================
-const debugDiv = document.createElement("div");
-debugDiv.style.position = "fixed";
-debugDiv.style.bottom = "0";
-debugDiv.style.left = "0";
-debugDiv.style.width = "100%";
-debugDiv.style.maxHeight = "150px";
-debugDiv.style.overflowY = "auto";
-debugDiv.style.background = "rgba(0,0,0,0.7)";
-debugDiv.style.color = "#fff";
-debugDiv.style.fontSize = "12px";
-debugDiv.style.fontFamily = "monospace";
-debugDiv.style.zIndex = "9999";
-debugDiv.style.padding = "5px";
-document.body.appendChild(debugDiv);
-
-function debugLog(message) {
-  const p = document.createElement("div");
-  p.textContent = message;
-  debugDiv.appendChild(p);
-  debugDiv.scrollTop = debugDiv.scrollHeight;
-}
-
-// =======================
-// 3. Попап и форма регистрации
-// =======================
-const regPopup = document.getElementById('regPopup');
-const regForm = document.getElementById('regForm');
-
-// =======================
-// 4. Функция инициализации приложения после регистрации
-// =======================
-function initApp(userData) {
-  debugLog(`Добро пожаловать, ${userData.person}`);
-  // здесь будет редирект:
-  window.location.href = '../page1/page1.html';
-}
-
-// =======================
-// 5. Ждём Telegram WebApp
-// =======================
-let tgUser = null;
-let tgId = null;
-
-function waitForTelegram(retries = 20) {
-  if (window.Telegram?.WebApp?.initDataUnsafe?.user) {
-    tgUser = window.Telegram.WebApp.initDataUnsafe.user;
-    tgId = tgUser.id.toString();
-    debugLog(`✅ Telegram WebApp доступен. ID: ${tgId}, Name: ${tgUser.first_name}`);
-    checkRegistration();
-  } else if (retries > 0) {
-    debugLog(`⌛ Ждём Telegram WebApp... (${retries})`);
-    setTimeout(() => waitForTelegram(retries - 1), 1000);
-  } else {
-    debugLog("⚠ Telegram WebApp недоступен");
-    alert("Telegram WebApp недоступен. Откройте сайт внутри Telegram.");
-  }
-}
-
-// =======================
-// 6. Проверка регистрации пользователя в Firebase
-// =======================
-async function checkRegistration() {
   try {
-    const snapshot = await db.ref(`users/${tgId}`).get();
+    // Проверяем наличие Telegram WebApp
+    if (!window.Telegram || !Telegram.WebApp) {
+      alert('Приложение доступно только через Telegram.');
+      return;
+    }
+
+    Telegram.WebApp.ready();
+
+    // Ждём, пока Telegram WebApp полностью инициализируется
+    await new Promise((resolve) => {
+      if (Telegram.WebApp.initDataUnsafe?.user) return resolve();
+      const checkInterval = setInterval(() => {
+        if (Telegram.WebApp.initDataUnsafe?.user) {
+          clearInterval(checkInterval);
+          resolve();
+        }
+      }, 100);
+    });
+
+    const tgUser = Telegram.WebApp.initDataUnsafe.user;
+    const tgId = tgUser.id;
+    console.log('✅ Telegram WebApp инициализирован:', tgUser);
+
+    // Инициализация Firebase
+    const firebaseConfig = {
+      apiKey: "AIzaSyDtpFytzqGoE8w1cK_uekt3nnNGN4vV2Y8",
+      authDomain: "auto-sos-8446f.firebaseapp.com",
+      projectId: "auto-sos-8446f",
+      storageBucket: "auto-sos-8446f.firebasestorage.app",
+      messagingSenderId: "326847407685",
+      appId: "1:326847407685:web:bfc1434124e1feed3ce52c",
+      measurementId: "G-0YL7B1NZT1"
+    };
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
+
+    const regPopup = document.getElementById('regPopup');
+    const regForm = document.getElementById('regForm');
+
+    console.log('⏳ Проверяем пользователя в Firebase...');
+    const snapshot = await db.ref('users/' + tgId).get();
+
+    // Скрываем прелоадер после инициализации Telegram и Firebase
+    preloader.classList.add('hide');
+
     if (snapshot.exists()) {
-      debugLog("✅ Пользователь зарегистрирован: " + JSON.stringify(snapshot.val()));
+      console.log('✅ Пользователь зарегистрирован:', snapshot.val());
       initApp(snapshot.val());
     } else {
-      debugLog("⚠ Пользователь не найден. Показываем попап регистрации.");
+      console.log('⚠️ Пользователь не найден — показываем попап регистрации.');
       regPopup.classList.add('show');
     }
-  } catch (err) {
-    debugLog("❌ Ошибка проверки Firebase: " + err);
-  }
-}
 
-// =======================
-// 7. Обработка формы регистрации
-// =======================
-regForm.addEventListener('submit', async (e) => {
-  e.preventDefault();
-  const formData = new FormData(regForm);
-  const data = {
-    person: formData.get('person'),
-    car: formData.get('car'),
-    carPlate: formData.get('carPlate'),
-    phone: formData.get('phone')
-  };
+    // Обработка формы
+    regForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
 
-  try {
-    await db.ref(`users/${tgId}`).set(data);
-    debugLog("✅ Регистрация успешна");
-    regPopup.classList.remove('show');
-    initApp(data);
+      const formData = new FormData(regForm);
+      const data = {
+        person: formData.get('person'),
+        car: formData.get('car'),
+        carPlate: formData.get('carPlate'),
+        phone: formData.get('phone')
+      };
+
+      try {
+        await db.ref('users/' + tgId).set(data);
+        alert('✅ Регистрация успешна!');
+        regPopup.classList.remove('show');
+        initApp(data);
+      } catch (err) {
+        console.error('Ошибка при сохранении данных в Firebase:', err);
+      }
+    });
+
+    function initApp(userData) {
+      console.log('Добро пожаловать,', userData.person);
+      Telegram.WebApp.expand();
+      window.location.href = '../page1/page1.html';
+    }
+
   } catch (err) {
-    debugLog("❌ Ошибка при регистрации: " + err);
+    console.error('Ошибка инициализации приложения:', err);
+    alert('Ошибка при запуске приложения. Попробуйте позже.');
   }
 });
 
-// =======================
-// 8. Стартуем ожидание Telegram после DOMContentLoaded
-// =======================
-document.addEventListener("DOMContentLoaded", () => {
-  debugLog("✅ DOM полностью загружен");
-  waitForTelegram();
-});
 
 
 
@@ -240,6 +205,7 @@ carInput.addEventListener('input', (e) => {
 
   e.target.value = value;
 });
+
 
 
 
