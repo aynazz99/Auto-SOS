@@ -14,11 +14,29 @@ const db = firebase.database();
 
 // Получение данных пользователя Telegram
 const tgUser = Telegram?.WebApp?.initDataUnsafe?.user;
+
 if (!tgUser) {
   alert('Не удалось получить данные пользователя Telegram.');
+  // Если хочешь, можно остановить работу скрипта
+  throw new Error('Нет данных пользователя Telegram');
 }
 
-const tgId = tgUser.id;
+const tgId = tgUser.id;        // уникальный id
+const tgName = tgUser.first_name;
+const tgUsername = tgUser.username;
+
+console.log('ID:', tgId, 'Имя:', tgName, 'Username:', tgUsername);
+
+// Работа с Firebase
+db.ref('users/' + tgId).get().then(snapshot => {
+  if (snapshot.exists()) {
+    console.log('Пользователь зарегистрирован:', snapshot.val());
+    initApp(snapshot.val());
+  } else {
+    // Показываем попап регистрации
+    regPopup.classList.add('show');
+  }
+}).catch(err => console.error(err));
 
 // Попап и форма
 const regPopup = document.getElementById('regPopup');
@@ -172,4 +190,5 @@ carInput.addEventListener('input', (e) => {
 
   e.target.value = value;
 });
+
 
