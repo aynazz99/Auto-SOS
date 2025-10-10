@@ -1,46 +1,34 @@
 // Инициализация Firebase
-  const firebaseConfig = {
-    apiKey: "AIzaSyDtpFytzqGoE8w1cK_uekt3nnNGN4vV2Y8",
-    authDomain: "auto-sos-8446f.firebaseapp.com",
-    projectId: "auto-sos-8446f",
-    storageBucket: "auto-sos-8446f.firebasestorage.app",
-    messagingSenderId: "326847407685",
-    appId: "1:326847407685:web:bfc1434124e1feed3ce52c",
-    measurementId: "G-0YL7B1NZT1"
-  };
+const firebaseConfig = {
+  apiKey: "AIzaSyDtpFytzqGoE8w1cK_uekt3nnNGN4vV2Y8",
+  authDomain: "auto-sos-8446f.firebaseapp.com",
+  projectId: "auto-sos-8446f",
+  storageBucket: "auto-sos-8446f.firebasestorage.app",
+  messagingSenderId: "326847407685",
+  appId: "1:326847407685:web:bfc1434124e1feed3ce52c",
+  measurementId: "G-0YL7B1NZT1"
+};
 
 firebase.initializeApp(firebaseConfig);
 const db = firebase.database();
+
+// Попап и форма — объявляем до использования
+const regPopup = document.getElementById('regPopup');
+const regForm = document.getElementById('regForm');
 
 // Получение данных пользователя Telegram
 const tgUser = Telegram?.WebApp?.initDataUnsafe?.user;
 
 if (!tgUser) {
   alert('Не удалось получить данные пользователя Telegram.');
-  // Если хочешь, можно остановить работу скрипта
   throw new Error('Нет данных пользователя Telegram');
 }
 
-const tgId = tgUser.id;        // уникальный id
+const tgId = tgUser.id;
 const tgName = tgUser.first_name;
 const tgUsername = tgUser.username;
 
 console.log('ID:', tgId, 'Имя:', tgName, 'Username:', tgUsername);
-
-// Работа с Firebase
-db.ref('users/' + tgId).get().then(snapshot => {
-  if (snapshot.exists()) {
-    console.log('Пользователь зарегистрирован:', snapshot.val());
-    initApp(snapshot.val());
-  } else {
-    // Показываем попап регистрации
-    regPopup.classList.add('show');
-  }
-}).catch(err => console.error(err));
-
-// Попап и форма
-const regPopup = document.getElementById('regPopup');
-const regForm = document.getElementById('regForm');
 
 // Проверка регистрации в Firebase
 db.ref('users/' + tgId).get().then(snapshot => {
@@ -76,9 +64,9 @@ regForm.addEventListener('submit', (e) => {
 // Функция инициализации приложения после регистрации
 function initApp(userData) {
   console.log('Добро пожаловать,', userData.person);
-  // Здесь можно редиректить на страницу заявок:
-  window.location.href = '../page1/page1.html'
+  window.location.href = '../page1/page1.html';
 }
+
 
 
 
@@ -190,5 +178,3 @@ carInput.addEventListener('input', (e) => {
 
   e.target.value = value;
 });
-
-
