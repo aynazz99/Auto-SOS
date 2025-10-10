@@ -1,155 +1,82 @@
-document.addEventListener('DOMContentLoaded', async () => {
-  //
-  // === 🔧 СТИЛИ И ПАНЕЛЬ ===
-  //
-  const style = document.createElement('style');
-  style.textContent = `
-    #preloader {
-      position: fixed; inset: 0;
-      background: #0e0e0e;
-      color: #fff;
-      display: flex; flex-direction: column;
-      justify-content: center; align-items: center;
-      font-family: monospace;
-      z-index: 9999;
-    }
-    .loader {
-      width: 60px; height: 60px;
-      border: 6px solid rgba(255,255,255,0.1);
-      border-top-color: #00aaff;
-      border-radius: 50%;
-      animation: spin 1s linear infinite;
-      margin-bottom: 8px;
-    }
-    @keyframes spin { to { transform: rotate(360deg); } }
-    #debug-panel {
-      width: 90%; max-width: 600px; margin-top: 10px;
-      text-align: left; font-size: 0.85em;
-      color: #ddd; background: rgba(255,255,255,0.08);
-      border-radius: 10px; padding: 10px;
-      max-height: 60vh; overflow-y: auto;
-    }
-    .log-entry { margin: 4px 0; }
-    .ok { color: #00ff99; }
-    .warn { color: #ffaa00; }
-    .err { color: #ff5555; }
-    .info { color: #00aaff; }
-  `;
-  document.head.appendChild(style);
-
-  const preloader = document.createElement('div');
-  preloader.id = 'preloader';
-  preloader.innerHTML = `
-    <div class="loader"></div>
-    <div id="debug-panel"></div>
-  `;
-  document.body.appendChild(preloader);
-  const debug = document.getElementById('debug-panel');
-
-  //
-  // === УТИЛИТЫ ===
-  //
-  const log = (msg, cls = 'info') => {
-    const el = document.createElement('div');
-    el.className = `log-entry ${cls}`;
-    el.textContent = `[${new Date().toLocaleTimeString()}] ${msg}`;
-    debug.appendChild(el);
-    console.log(msg);
+// Инициализация Firebase
+  const firebaseConfig = {
+    apiKey: "AIzaSyDtpFytzqGoE8w1cK_uekt3nnNGN4vV2Y8",
+    authDomain: "auto-sos-8446f.firebaseapp.com",
+    projectId: "auto-sos-8446f",
+    storageBucket: "auto-sos-8446f.firebasestorage.app",
+    messagingSenderId: "326847407685",
+    appId: "1:326847407685:web:bfc1434124e1feed3ce52c",
+    measurementId: "G-0YL7B1NZT1"
   };
 
-  const waitFor = async (desc, checkFn, warnAfter = 5000) => {
-    const start = Date.now();
-    while (!checkFn()) {
-      await new Promise(r => setTimeout(r, 100));
-      if (Date.now() - start > warnAfter && Date.now() - start < warnAfter + 200) {
-        log(`⏳ ${desc} ещё не инициализировался (${warnAfter / 1000}s)`, 'warn');
+firebase.initializeApp(firebaseConfig);
+const db = firebase.database();
+
+// Заглушка для тестирования вне Telegram
+if (typeof Telegram === 'undefined') {
+  window.Telegram = {
+    WebApp: {
+      initDataUnsafe: {
+        user: {
+          id: 'test_user_123',   // любой уникальный id
+          first_name: 'Тест',
+          username: 'testuser'
+        }
       }
     }
-    log(`✅ ${desc} найден.`, 'ok');
+  };
+}
+
+
+// Получение данных пользователя Telegram
+const tgUser = Telegram?.WebApp?.initDataUnsafe?.user;
+if (!tgUser) {
+  alert('Не удалось получить данные пользователя Telegram.');
+}
+
+const tgId = tgUser.id;
+
+// Попап и форма
+const regPopup = document.getElementById('regPopup');
+const regForm = document.getElementById('regForm');
+
+// Проверка регистрации в Firebase
+db.ref('users/' + tgId).get().then(snapshot => {
+  if (snapshot.exists()) {
+    console.log('Пользователь зарегистрирован:', snapshot.val());
+    initApp(snapshot.val());
+  } else {
+    // Показываем попап регистрации
+    regPopup.classList.add('show');
+  }
+}).catch(err => console.error(err));
+
+// Обработка формы регистрации
+regForm.addEventListener('submit', (e) => {
+  e.preventDefault();
+  const formData = new FormData(regForm);
+  const data = {
+    person: formData.get('person'),
+    car: formData.get('car'),
+    carPlate: formData.get('carPlate'),
+    phone: formData.get('phone')
   };
 
-  //
-  // === ГЛАВНЫЙ ЦИКЛ ===
-  //
-  try {
-    log('🚀 Инициализация WebApp...');
-
-    await waitFor('window.Telegram', () => !!window.Telegram);
-    await waitFor('Telegram.WebApp', () => !!Telegram.WebApp);
-    Telegram.WebApp.ready();
-
-    await waitFor('Telegram.WebApp.initDataUnsafe', () => !!Telegram.WebApp.initDataUnsafe);
-
-    const tg = Telegram.WebApp;
-    const unsafe = tg.initDataUnsafe || {};
-
-    // === Вывод сырых данных ===
-    log('📦 RAW initData:', 'info');
-    log(JSON.stringify(tg.initData || '(пусто)', null, 2), 'info');
-
-    log('📦 RAW initDataUnsafe:', 'info');
-    log(JSON.stringify(unsafe, null, 2), 'info');
-
-    // === Анализ контекста ===
-    let contextType = 'неизвестен';
-    if (unsafe.user) contextType = 'приватный чат';
-    else if (unsafe.chat_type === 'group' || unsafe.chat?.type === 'group') contextType = 'группа';
-    else if (unsafe.chat_type === 'channel' || unsafe.chat?.type === 'channel') contextType = 'канал';
-    else if (unsafe.inline_query_id) contextType = 'inline';
-    else if (unsafe.chat_instance) contextType = 'chat_instance';
-
-    log(`🌐 Контекст запуска: ${contextType}`, 'ok');
-
-    const tgContext = unsafe.user || unsafe.chat;
-    if (!tgContext?.id) {
-      log('⚠️ Нет user/chat ID. Вероятно, WebApp открыт вне приватного чата.', 'warn');
-      return;
-    }
-
-    log(`🆔 Telegram ID: ${tgContext.id}`, 'ok');
-    log(`👤 Имя: ${tgContext.first_name || tgContext.title || '—'}`);
-
-    // === Firebase ===
-    log('🔥 Инициализация Firebase...');
-    const firebaseConfig = {
-      apiKey: "AIzaSyDtpFytzqGoE8w1cK_uekt3nnNGN4vV2Y8",
-      authDomain: "auto-sos-8446f.firebaseapp.com",
-      projectId: "auto-sos-8446f",
-      storageBucket: "auto-sos-8446f.firebasestorage.app",
-      messagingSenderId: "326847407685",
-      appId: "1:326847407685:web:bfc1434124e1feed3ce52c",
-      measurementId: "G-0YL7B1NZT1"
-    };
-    firebase.initializeApp(firebaseConfig);
-    const db = firebase.database();
-    log('✅ Firebase готов.', 'ok');
-
-    // === Проверка регистрации ===
-    log('🔎 Проверяем регистрацию...');
-    const snapshot = await db.ref('users/' + tgContext.id).get();
-
-    if (snapshot.exists()) {
-      log('✅ Пользователь найден: ' + JSON.stringify(snapshot.val()), 'ok');
-      setTimeout(() => preloader.remove(), 1000);
-      window.location.href = '../page1/page1.html';
-    } else {
-      log('⚠️ Новый пользователь, показываем форму регистрации.', 'warn');
-      setTimeout(() => preloader.remove(), 1000);
-      document.getElementById('regPopup')?.classList.add('show');
-    }
-
-  } catch (e) {
-    log('💥 Ошибка: ' + e.message, 'err');
-    console.error(e);
-  }
+  db.ref('users/' + tgId).set(data)
+    .then(() => {
+      alert('Регистрация успешна!');
+      regPopup.classList.remove('show');
+      initApp(data);
+    })
+    .catch(err => console.error(err));
 });
 
-
-
-
-
-
-
+// Функция инициализации приложения после регистрации
+function initApp(userData) {
+  console.log('Добро пожаловать,', userData.person);
+  // Здесь можно редиректить на страницу заявок:
+  window.location.href = '../page1/page1.html'
+}
 
 
 
@@ -261,15 +188,3 @@ carInput.addEventListener('input', (e) => {
 
   e.target.value = value;
 });
-
-
-
-
-
-
-
-
-
-
-
-
