@@ -1,25 +1,33 @@
-document.addEventListener("DOMContentLoaded", () => {
-  const btn = document.getElementById("getUserBtn");
-  const info = document.getElementById("userInfo");
+document.addEventListener("DOMContentLoaded", async () => {
+  const out = document.getElementById("output");
 
-  btn.addEventListener("click", () => {
-    // Получаем данные пользователя из Telegram
-    const tg = window.Telegram.WebApp;
-    const user = tg.initDataUnsafe?.user;
+  try {
+    const tg = window.Telegram?.WebApp;
+    tg?.ready();
 
-    // Если данные пришли из Telegram
-    if (user) {
-      info.innerHTML = `
-        <p><b>ID:</b> ${user.id}</p>
-        <p><b>Имя:</b> ${user.first_name || '—'}</p>
-        <p><b>Фамилия:</b> ${user.last_name || '—'}</p>
-        <p><b>Username:</b> @${user.username || '—'}</p>
-      `;
-    } else {
-      // Для тестов в браузере без Telegram
-      info.innerHTML = `
-        <p>Нет данных из Telegram. Запусти в Mini App.</p>
-      `;
-    }
-  });
+    // ждём немного, Telegram иногда отдаёт данные с задержкой
+    await new Promise(r => setTimeout(r, 200));
+
+    const data = {
+      initData: tg?.initData || null,
+      initDataUnsafe: tg?.initDataUnsafe || null,
+      version: tg?.version,
+      platform: tg?.platform,
+      colorScheme: tg?.colorScheme,
+      themeParams: tg?.themeParams,
+      viewportHeight: tg?.viewportHeight,
+      viewportStableHeight: tg?.viewportStableHeight,
+      headerColor: tg?.headerColor,
+      backgroundColor: tg?.backgroundColor,
+      isExpanded: tg?.isExpanded,
+      MainButton: tg?.MainButton,
+      BackButton: tg?.BackButton,
+      HapticFeedback: tg?.HapticFeedback,
+      CloudStorage: tg?.CloudStorage,
+    };
+
+    out.textContent = JSON.stringify(data, null, 2);
+  } catch (err) {
+    out.textContent = "Ошибка: " + err.message;
+  }
 });
