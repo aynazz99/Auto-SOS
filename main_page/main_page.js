@@ -12,22 +12,6 @@
 firebase.initializeApp(firebaseConfig);
 const db = firebase.database();
 
-// Заглушка для тестирования вне Telegram
-if (typeof Telegram === 'undefined') {
-  window.Telegram = {
-    WebApp: {
-      initDataUnsafe: {
-        user: {
-          id: 'test_user_123',   // любой уникальный id
-          first_name: 'Тест',
-          username: 'testuser'
-        }
-      }
-    }
-  };
-}
-
-
 // Получение данных пользователя Telegram
 const tgUser = Telegram?.WebApp?.initDataUnsafe?.user;
 if (!tgUser) {
@@ -188,3 +172,4 @@ carInput.addEventListener('input', (e) => {
 
   e.target.value = value;
 });
+
