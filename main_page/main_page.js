@@ -13,76 +13,101 @@ firebase.initializeApp(firebaseConfig);
 const db = firebase.database();
 
 // ===== Дебаг прямо на странице =====
-function debugLog(msg) {
-  const debugDiv = document.getElementById('debug');
-  if (!debugDiv) return;
-  const time = new Date().toLocaleTimeString();
-  debugDiv.innerHTML += `[${time}] ${msg}<br>`;
-  debugDiv.scrollTop = debugDiv.scrollHeight;
-}
+document.addEventListener("DOMContentLoaded", async () => {
+  // ===== Создаем дебаг-элемент, если его нет =====
+  let debugDiv = document.getElementById("debug");
+  if (!debugDiv) {
+    debugDiv = document.createElement("div");
+    debugDiv.id = "debug";
+    debugDiv.style.cssText = "position:fixed;bottom:0;left:0;width:100%;max-height:150px;overflow:auto;background:#000;color:#0f0;font-size:12px;padding:5px;z-index:9999;";
+    document.body.appendChild(debugDiv);
+  }
 
-// ===== Получение данных Telegram =====
-const tgUser = Telegram?.WebApp?.initDataUnsafe?.user;
-if (!tgUser) {
-  alert('Ошибка: данные Telegram недоступны!');
-  debugLog('❌ Нет данных Telegram');
-  throw new Error('Нет данных Telegram');
-}
+  function debugLog(msg) {
+    const time = new Date().toLocaleTimeString();
+    debugDiv.innerHTML += `[${time}] ${msg}<br>`;
+    debugDiv.scrollTop = debugDiv.scrollHeight;
+  }
 
-const tgId = tgUser.id;
-const tgName = tgUser.first_name;
-const tgUsername = tgUser.username;
+  debugLog("✅ DOM полностью загружен");
 
-debugLog(`✅ Telegram получен: ID=${tgId}, Name=${tgName}, Username=${tgUsername}`);
+  // ===== Инициализация Firebase =====
+  const firebaseConfig = {
+    apiKey: "AIzaSyDtpFytzqGoE8w1cK_uekt3nnNGN4vV2Y8",
+    authDomain: "auto-sos-8446f.firebaseapp.com",
+    projectId: "auto-sos-8446f",
+    storageBucket: "auto-sos-8446f.firebasestorage.app",
+    messagingSenderId: "326847407685",
+    appId: "1:326847407685:web:bfc1434124e1feed3ce52c",
+    measurementId: "G-0YL7B1NZT1"
+  };
 
-// ===== Элементы формы =====
-const regPopup = document.getElementById('regPopup');
-const regForm = document.getElementById('regForm');
-const carPlateInput = document.querySelector('.car-plate');
-const nameInput = document.querySelector('.person-name');
-const phoneInput = document.querySelector('.phone');
-const carInput = document.querySelector('.car');
+  firebase.initializeApp(firebaseConfig);
+  const db = firebase.database();
+  debugLog("✅ Firebase инициализирован");
 
-// ===== Проверка регистрации =====
-db.ref('users/' + tgId).get()
-  .then(snapshot => {
+  // ===== Получаем данные Telegram =====
+  const tgUser = Telegram?.WebApp?.initDataUnsafe?.user;
+  if (!tgUser) {
+    debugLog("❌ Telegram WebApp данные недоступны!");
+    alert("Ошибка: данные Telegram недоступны!");
+    return;
+  }
+
+  const tgId = tgUser.id;
+  const tgName = tgUser.first_name;
+  const tgUsername = tgUser.username;
+  debugLog(`✅ Telegram: ID=${tgId}, Name=${tgName}, Username=${tgUsername}`);
+
+  // ===== Элементы формы и попап =====
+  const regPopup = document.getElementById("regPopup");
+  const regForm = document.getElementById("regForm");
+  if (!regPopup || !regForm) {
+    debugLog("❌ Попап или форма не найдены!");
+    return;
+  }
+
+  // ===== Проверка регистрации =====
+  try {
+    const snapshot = await db.ref('users/' + tgId).get();
     if (snapshot.exists()) {
       debugLog("✅ Пользователь зарегистрирован: " + JSON.stringify(snapshot.val()));
       initApp(snapshot.val());
     } else {
-      debugLog("ℹ️ Пользователь не найден, показываем попап регистрации");
+      debugLog("ℹ️ Пользователь не найден, показываем попап");
       regPopup.classList.add('show');
     }
-  })
-  .catch(err => debugLog("❌ Ошибка Firebase: " + err));
+  } catch (err) {
+    debugLog("❌ Ошибка Firebase: " + err);
+  }
 
-// ===== Обработка формы регистрации =====
-regForm.addEventListener('submit', (e) => {
-  e.preventDefault();
-  const formData = new FormData(regForm);
-  const data = {
-    person: formData.get('person'),
-    car: formData.get('car'),
-    carPlate: formData.get('carPlate'),
-    phone: formData.get('phone')
-  };
+  // ===== Обработка формы регистрации =====
+  regForm.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const formData = new FormData(regForm);
+    const data = {
+      person: formData.get("person"),
+      car: formData.get("car"),
+      carPlate: formData.get("carPlate"),
+      phone: formData.get("phone")
+    };
 
-  db.ref('users/' + tgId).set(data)
-    .then(() => {
+    try {
+      await db.ref('users/' + tgId).set(data);
       debugLog("✅ Регистрация успешна: " + JSON.stringify(data));
       regPopup.classList.remove('show');
       initApp(data);
-    })
-    .catch(err => debugLog("❌ Ошибка при регистрации: " + err));
+    } catch (err) {
+      debugLog("❌ Ошибка при регистрации: " + err);
+    }
+  });
+
+  // ===== Функция инициализации приложения =====
+  function initApp(userData) {
+    debugLog(`🎉 Добро пожаловать, ${userData.person}`);
+    window.location.href = "../page1/page1.html";
+  }
 });
-
-// ===== Инициализация приложения после регистрации =====
-function initApp(userData) {
-  debugLog(`🎉 Добро пожаловать, ${userData.person}`);
-  // Перенаправление на страницу заявок
-  window.location.href = '../page1/page1.html';
-}
-
 
 
 
@@ -193,6 +218,7 @@ carInput.addEventListener('input', (e) => {
 
   e.target.value = value;
 });
+
 
 
 
