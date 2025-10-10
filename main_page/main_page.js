@@ -1,6 +1,6 @@
 document.addEventListener('DOMContentLoaded', async () => {
   //
-  // === СТИЛИ И ДЕБАГ-ПАНЕЛЬ ===
+  // === 🔧 СТИЛИ И ПАНЕЛЬ ===
   //
   const style = document.createElement('style');
   style.textContent = `
@@ -19,6 +19,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       border-top-color: #00aaff;
       border-radius: 50%;
       animation: spin 1s linear infinite;
+      margin-bottom: 8px;
     }
     @keyframes spin { to { transform: rotate(360deg); } }
     #debug-panel {
@@ -45,6 +46,9 @@ document.addEventListener('DOMContentLoaded', async () => {
   document.body.appendChild(preloader);
   const debug = document.getElementById('debug-panel');
 
+  //
+  // === УТИЛИТЫ ===
+  //
   const log = (msg, cls = 'info') => {
     const el = document.createElement('div');
     el.className = `log-entry ${cls}`;
@@ -53,38 +57,59 @@ document.addEventListener('DOMContentLoaded', async () => {
     console.log(msg);
   };
 
-  const checkWithTimeout = async (desc, testFn, interval = 100, warnAfter = 5000) => {
+  const waitFor = async (desc, checkFn, warnAfter = 5000) => {
     const start = Date.now();
-    while (!testFn()) {
-      await new Promise(r => setTimeout(r, interval));
-      if (Date.now() - start > warnAfter && Date.now() - start < warnAfter + interval) {
-        log(`⏳ ${desc} ещё не инициализировался... (прошло ${warnAfter / 1000}s)`, 'warn');
+    while (!checkFn()) {
+      await new Promise(r => setTimeout(r, 100));
+      if (Date.now() - start > warnAfter && Date.now() - start < warnAfter + 200) {
+        log(`⏳ ${desc} ещё не инициализировался (${warnAfter / 1000}s)`, 'warn');
       }
     }
     log(`✅ ${desc} найден.`, 'ok');
   };
 
+  //
+  // === ГЛАВНЫЙ ЦИКЛ ===
+  //
   try {
-    log('🚀 Запуск инициализации...');
+    log('🚀 Инициализация WebApp...');
 
-    await checkWithTimeout('window.Telegram', () => !!window.Telegram);
-    await checkWithTimeout('Telegram.WebApp', () => !!Telegram.WebApp);
+    await waitFor('window.Telegram', () => !!window.Telegram);
+    await waitFor('Telegram.WebApp', () => !!Telegram.WebApp);
     Telegram.WebApp.ready();
 
-    await checkWithTimeout('Telegram.WebApp.initDataUnsafe', () => !!Telegram.WebApp.initDataUnsafe);
-    const tg = Telegram.WebApp;
-    const unsafe = tg.initDataUnsafe;
-    log(`👤 Пользователь: ${unsafe?.user?.username || 'нет username'}`);
+    await waitFor('Telegram.WebApp.initDataUnsafe', () => !!Telegram.WebApp.initDataUnsafe);
 
-    if (!unsafe.user) {
-      log('❌ Нет данных пользователя (initDataUnsafe.user пуст)', 'err');
+    const tg = Telegram.WebApp;
+    const unsafe = tg.initDataUnsafe || {};
+
+    // === Вывод сырых данных ===
+    log('📦 RAW initData:', 'info');
+    log(JSON.stringify(tg.initData || '(пусто)', null, 2), 'info');
+
+    log('📦 RAW initDataUnsafe:', 'info');
+    log(JSON.stringify(unsafe, null, 2), 'info');
+
+    // === Анализ контекста ===
+    let contextType = 'неизвестен';
+    if (unsafe.user) contextType = 'приватный чат';
+    else if (unsafe.chat_type === 'group' || unsafe.chat?.type === 'group') contextType = 'группа';
+    else if (unsafe.chat_type === 'channel' || unsafe.chat?.type === 'channel') contextType = 'канал';
+    else if (unsafe.inline_query_id) contextType = 'inline';
+    else if (unsafe.chat_instance) contextType = 'chat_instance';
+
+    log(`🌐 Контекст запуска: ${contextType}`, 'ok');
+
+    const tgContext = unsafe.user || unsafe.chat;
+    if (!tgContext?.id) {
+      log('⚠️ Нет user/chat ID. Вероятно, WebApp открыт вне приватного чата.', 'warn');
       return;
     }
 
-    const tgId = unsafe.user.id;
-    log(`🆔 Telegram ID: ${tgId}`);
+    log(`🆔 Telegram ID: ${tgContext.id}`, 'ok');
+    log(`👤 Имя: ${tgContext.first_name || tgContext.title || '—'}`);
 
-    // Firebase
+    // === Firebase ===
     log('🔥 Инициализация Firebase...');
     const firebaseConfig = {
       apiKey: "AIzaSyDtpFytzqGoE8w1cK_uekt3nnNGN4vV2Y8",
@@ -99,15 +124,16 @@ document.addEventListener('DOMContentLoaded', async () => {
     const db = firebase.database();
     log('✅ Firebase готов.', 'ok');
 
+    // === Проверка регистрации ===
     log('🔎 Проверяем регистрацию...');
-    const snapshot = await db.ref('users/' + tgId).get();
+    const snapshot = await db.ref('users/' + tgContext.id).get();
 
     if (snapshot.exists()) {
       log('✅ Пользователь найден: ' + JSON.stringify(snapshot.val()), 'ok');
       setTimeout(() => preloader.remove(), 1000);
       window.location.href = '../page1/page1.html';
     } else {
-      log('⚠️ Новый пользователь, открываем форму.', 'warn');
+      log('⚠️ Новый пользователь, показываем форму регистрации.', 'warn');
       setTimeout(() => preloader.remove(), 1000);
       document.getElementById('regPopup')?.classList.add('show');
     }
@@ -117,6 +143,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     console.error(e);
   }
 });
+
 
 
 
@@ -234,6 +261,7 @@ carInput.addEventListener('input', (e) => {
 
   e.target.value = value;
 });
+
 
 
 
