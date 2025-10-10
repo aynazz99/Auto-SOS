@@ -1,157 +1,91 @@
 document.addEventListener('DOMContentLoaded', async () => {
   //
-  // === 🔧 ДИНАМИЧЕСКОЕ СОЗДАНИЕ СТИЛЕЙ ===
+  // === СТИЛИ И ДЕБАГ-ПАНЕЛЬ ===
   //
   const style = document.createElement('style');
   style.textContent = `
     #preloader {
-      position: fixed;
-      inset: 0;
+      position: fixed; inset: 0;
       background: #0e0e0e;
       color: #fff;
-      display: flex;
-      flex-direction: column;
-      justify-content: center;
-      align-items: center;
-      gap: 12px;
-      z-index: 9999;
+      display: flex; flex-direction: column;
+      justify-content: center; align-items: center;
       font-family: monospace;
-      transition: opacity 0.6s ease, visibility 0.6s ease;
+      z-index: 9999;
     }
-    #preloader.hide { opacity: 0; visibility: hidden; }
     .loader {
       width: 60px; height: 60px;
-      border: 6px solid rgba(255,255,255,0.2);
+      border: 6px solid rgba(255,255,255,0.1);
       border-top-color: #00aaff;
       border-radius: 50%;
       animation: spin 1s linear infinite;
     }
     @keyframes spin { to { transform: rotate(360deg); } }
-    #loading-text { font-size: 1.1em; animation: pulse 2s infinite; }
-    @keyframes pulse { 0%,100% {opacity:.5;} 50% {opacity:1;} }
     #debug-panel {
-      width: 90%;
-      max-width: 600px;
-      background: rgba(255,255,255,0.1);
-      border-radius: 10px;
-      padding: 10px;
-      text-align: left;
-      overflow-y: auto;
-      max-height: 55vh;
-      color: #ddd;
-      font-size: 0.85em;
+      width: 90%; max-width: 600px; margin-top: 10px;
+      text-align: left; font-size: 0.85em;
+      color: #ddd; background: rgba(255,255,255,0.08);
+      border-radius: 10px; padding: 10px;
+      max-height: 60vh; overflow-y: auto;
     }
-    #debug-panel h3 { margin: 0 0 5px 0; font-size: 1em; color: #00aaff; }
-    #debug-output { white-space: pre-wrap; word-wrap: break-word; overflow-wrap: anywhere; }
-    #copy-debug {
-      margin-top: 6px;
-      background: #00aaff;
-      border: none;
-      border-radius: 5px;
-      color: #fff;
-      padding: 6px 10px;
-      cursor: pointer;
-      font-size: 0.8em;
-      transition: background 0.3s;
-    }
-    #copy-debug:hover { background: #0095dd; }
+    .log-entry { margin: 4px 0; }
+    .ok { color: #00ff99; }
+    .warn { color: #ffaa00; }
+    .err { color: #ff5555; }
+    .info { color: #00aaff; }
   `;
   document.head.appendChild(style);
 
-  //
-  // === 🔧 СОЗДАНИЕ ПРЕЛОАДЕРА И ДЕБАГ-ПАНЕЛИ ===
-  //
   const preloader = document.createElement('div');
   preloader.id = 'preloader';
   preloader.innerHTML = `
     <div class="loader"></div>
-    <p id="loading-text">Запуск приложения...</p>
-    <div id="debug-panel">
-      <h3>🔧 Debug Info</h3>
-      <pre id="debug-output">Инициализация...</pre>
-      <button id="copy-debug">📋 Копировать JSON</button>
-    </div>
+    <div id="debug-panel"></div>
   `;
   document.body.appendChild(preloader);
+  const debug = document.getElementById('debug-panel');
 
-  const loadingText = document.getElementById('loading-text');
-  const debugOutput = document.getElementById('debug-output');
-  const copyBtn = document.getElementById('copy-debug');
+  const log = (msg, cls = 'info') => {
+    const el = document.createElement('div');
+    el.className = `log-entry ${cls}`;
+    el.textContent = `[${new Date().toLocaleTimeString()}] ${msg}`;
+    debug.appendChild(el);
+    console.log(msg);
+  };
 
-  copyBtn.addEventListener('click', () => {
-    navigator.clipboard.writeText(debugOutput.textContent)
-      .then(() => copyBtn.textContent = '✅ Скопировано!')
-      .catch(() => copyBtn.textContent = '⚠️ Ошибка копирования');
-    setTimeout(() => copyBtn.textContent = '📋 Копировать JSON', 1500);
-  });
-
-  //
-  // === 🔧 УТИЛИТЫ ===
-  //
-  const log = (msg, data = null) => {
-    console.log(msg, data || '');
-    debugOutput.textContent += `\n${msg}`;
-    if (data) {
-      try {
-        debugOutput.textContent += `\n${JSON.stringify(data, null, 2)}\n`;
-      } catch {
-        debugOutput.textContent += `\n${data}\n`;
+  const checkWithTimeout = async (desc, testFn, interval = 100, warnAfter = 5000) => {
+    const start = Date.now();
+    while (!testFn()) {
+      await new Promise(r => setTimeout(r, interval));
+      if (Date.now() - start > warnAfter && Date.now() - start < warnAfter + interval) {
+        log(`⏳ ${desc} ещё не инициализировался... (прошло ${warnAfter / 1000}s)`, 'warn');
       }
     }
+    log(`✅ ${desc} найден.`, 'ok');
   };
 
-  const updateStatus = (text) => {
-    loadingText.textContent = text;
-    log(`🌀 ${text}`);
-  };
-
-  //
-  // === 🚀 ГЛАВНАЯ ЛОГИКА ===
-  //
   try {
-    updateStatus('Ожидание Telegram WebApp...');
+    log('🚀 Запуск инициализации...');
 
-    // Ждём Telegram.WebApp без ограничения по времени
-    await new Promise((resolve) => {
-      const checkTelegram = () => {
-        if (window.Telegram && Telegram.WebApp) resolve();
-        else requestAnimationFrame(checkTelegram);
-      };
-      checkTelegram();
-    });
-
+    await checkWithTimeout('window.Telegram', () => !!window.Telegram);
+    await checkWithTimeout('Telegram.WebApp', () => !!Telegram.WebApp);
     Telegram.WebApp.ready();
-    log('✅ Telegram.WebApp найден.');
 
-    // Ждём initDataUnsafe
-    updateStatus('Получаем данные от Telegram...');
-    await new Promise((resolve) => {
-      const checkUser = () => {
-        if (Telegram.WebApp.initDataUnsafe) resolve();
-        else requestAnimationFrame(checkUser);
-      };
-      checkUser();
-    });
-
+    await checkWithTimeout('Telegram.WebApp.initDataUnsafe', () => !!Telegram.WebApp.initDataUnsafe);
     const tg = Telegram.WebApp;
-    const initData = tg.initData || '(пусто)';
-    const initUnsafe = tg.initDataUnsafe || {};
-    log('📦 initData:', initData);
-    log('📦 initDataUnsafe:', initUnsafe);
+    const unsafe = tg.initDataUnsafe;
+    log(`👤 Пользователь: ${unsafe?.user?.username || 'нет username'}`);
 
-    if (!initUnsafe.user) {
-      updateStatus('❌ Нет данных пользователя!');
-      log('⚠️ Telegram.WebApp.initDataUnsafe.user отсутствует.');
+    if (!unsafe.user) {
+      log('❌ Нет данных пользователя (initDataUnsafe.user пуст)', 'err');
       return;
     }
 
-    const tgUser = initUnsafe.user;
-    const tgId = tgUser.id;
-    log('👤 Пользователь:', tgUser);
-    updateStatus('✅ Telegram данные получены.');
+    const tgId = unsafe.user.id;
+    log(`🆔 Telegram ID: ${tgId}`);
 
-    // === Firebase ===
-    updateStatus('Подключаем Firebase...');
+    // Firebase
+    log('🔥 Инициализация Firebase...');
     const firebaseConfig = {
       apiKey: "AIzaSyDtpFytzqGoE8w1cK_uekt3nnNGN4vV2Y8",
       authDomain: "auto-sos-8446f.firebaseapp.com",
@@ -163,40 +97,26 @@ document.addEventListener('DOMContentLoaded', async () => {
     };
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
-    log('🔥 Firebase инициализирован.');
+    log('✅ Firebase готов.', 'ok');
 
-    updateStatus('Проверяем регистрацию в Firebase...');
+    log('🔎 Проверяем регистрацию...');
     const snapshot = await db.ref('users/' + tgId).get();
 
     if (snapshot.exists()) {
-      log('✅ Пользователь найден в Firebase:', snapshot.val());
-      updateStatus('Добро пожаловать, ' + snapshot.val().person);
-      await new Promise((r) => setTimeout(r, 800));
-      preloader.classList.add('hide');
-      initApp(snapshot.val());
+      log('✅ Пользователь найден: ' + JSON.stringify(snapshot.val()), 'ok');
+      setTimeout(() => preloader.remove(), 1000);
+      window.location.href = '../page1/page1.html';
     } else {
-      log('⚠️ Новый пользователь — показываем форму регистрации.');
-      updateStatus('Не зарегистрирован. Ожидание действий...');
-      await new Promise((r) => setTimeout(r, 800));
-      preloader.classList.add('hide');
+      log('⚠️ Новый пользователь, открываем форму.', 'warn');
+      setTimeout(() => preloader.remove(), 1000);
       document.getElementById('regPopup')?.classList.add('show');
     }
 
-    function initApp(userData) {
-      log('🚀 Инициализация приложения с пользователем:', userData);
-      Telegram.WebApp.expand();
-      window.location.href = '../page1/page1.html';
-    }
-
-  } catch (err) {
-    console.error('Ошибка инициализации:', err);
-    debugOutput.textContent += `\n❌ Ошибка: ${err.message}`;
-    preloader.classList.add('hide');
-    alert('Ошибка при запуске. Проверьте консоль.');
+  } catch (e) {
+    log('💥 Ошибка: ' + e.message, 'err');
+    console.error(e);
   }
 });
-
-
 
 
 
@@ -314,6 +234,7 @@ carInput.addEventListener('input', (e) => {
 
   e.target.value = value;
 });
+
 
 
 
