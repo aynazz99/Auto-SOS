@@ -69,7 +69,7 @@ function waitForTelegram(retries = 20) {
     checkRegistration();
   } else if (retries > 0) {
     debugLog(`⌛ Ждём Telegram WebApp... (${retries})`);
-    setTimeout(() => waitForTelegram(retries - 1), 300);
+    setTimeout(() => waitForTelegram(retries - 1), 1000);
   } else {
     debugLog("⚠ Telegram WebApp недоступен");
     alert("Telegram WebApp недоступен. Откройте сайт внутри Telegram.");
@@ -240,6 +240,7 @@ carInput.addEventListener('input', (e) => {
 
   e.target.value = value;
 });
+
 
 
 
