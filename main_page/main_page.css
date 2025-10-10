@@ -146,6 +146,52 @@ button:hover {
   background: #005fcc;
 }
 
+
+
+
+
+
+
+/* ==========================
+   Прелоадер
+========================== */
+#preloader {
+  position: fixed;
+  inset: 0;
+  background: linear-gradient(180deg, #121212, #1e1e1e);
+  color: white;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  z-index: 9999;
+  transition: opacity 0.5s ease, visibility 0.5s ease;
+}
+
+#preloader.hide {
+  opacity: 0;
+  visibility: hidden;
+}
+
+.loader {
+  width: 50px;
+  height: 50px;
+  border: 5px solid rgba(255,255,255,0.2);
+  border-top-color: #00aaff;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin-bottom: 15px;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+
+
+
+
+
 /* === Адаптив для маленьких экранов === */
 @media (max-width: 360px) {
   .popup-content {
@@ -175,3 +221,4 @@ button:hover {
     font-size: 14px;
   }
 }
+
