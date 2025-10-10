@@ -12,72 +12,57 @@ const firebaseConfig = {
 firebase.initializeApp(firebaseConfig);
 const db = firebase.database();
 
-// === Получение данных пользователя Telegram ===
+// === Диагностический блок для вывода всех данных Telegram ===
 document.addEventListener("DOMContentLoaded", () => {
-  const tg = window.Telegram?.WebApp;
-
-  if (!tg || !tg.initDataUnsafe || !tg.initDataUnsafe.user) {
-    alert('Не удалось получить данные из Telegram. Открой мини-приложение внутри Telegram.');
-    return;
-  }
-
-  const tgUser = tg.initDataUnsafe.user;
-  const tgId = tgUser.id;
-
-  // === Динамически показываем все данные Telegram на странице ===
-  const infoDiv = document.createElement('div');
-  infoDiv.id = 'tg-info';
-  infoDiv.style.cssText = `
-    background: #f1f1f1;
-    padding: 10px;
-    margin: 10px 0;
-    border-radius: 8px;
+  const outputDiv = document.createElement('div');
+  outputDiv.id = 'tg-debug';
+  outputDiv.style.cssText = `
     font-family: monospace;
+    background: #111;
+    color: #0f0;
+    padding: 12px;
+    margin: 10px;
+    border-radius: 10px;
     white-space: pre-wrap;
+    font-size: 13px;
   `;
-  infoDiv.textContent = "📦 Данные Telegram:\n" + JSON.stringify(tgUser, null, 2);
-  document.body.prepend(infoDiv);
+  document.body.prepend(outputDiv);
 
-  // === Проверка регистрации ===
-  db.ref('users/' + tgId).get().then(snapshot => {
-    if (snapshot.exists()) {
-      console.log('Пользователь зарегистрирован:', snapshot.val());
-      initApp(snapshot.val());
-    } else {
-      // Показываем попап регистрации
-      regPopup.classList.add('show');
+  function showTelegramData() {
+    const tg = window.Telegram?.WebApp;
+
+    if (!tg) {
+      outputDiv.textContent = '❌ Telegram WebApp не найден. Откройте мини-приложение через Telegram.';
+      return;
     }
-  }).catch(err => console.error(err));
 
-  // === Обработка формы регистрации ===
-  regForm.addEventListener('submit', (e) => {
-    e.preventDefault();
-    const formData = new FormData(regForm);
-    const data = {
-      person: formData.get('person'),
-      car: formData.get('car'),
-      carPlate: formData.get('carPlate'),
-      phone: formData.get('phone'),
-      tgUsername: tgUser.username || '',
-      tgFirstName: tgUser.first_name || '',
-      tgLastName: tgUser.last_name || '',
-      tgLanguage: tgUser.language_code || '',
-      tgId: tgId
+    // Формируем объект с основными ключами
+    const webAppData = {
+      version: tg.version,
+      platform: tg.platform,
+      isExpanded: tg.isExpanded,
+      isClosingConfirmed: tg.isClosingConfirmed,
+      initData: tg.initData,
+      initDataUnsafe: tg.initDataUnsafe,
+      MainButton: {
+        isVisible: tg.MainButton.isVisible,
+        text: tg.MainButton.text,
+        color: tg.MainButton.color,
+        textColor: tg.MainButton.textColor
+      },
+      BackButton: {
+        isVisible: tg.BackButton.isVisible
+      }
     };
 
-    db.ref('users/' + tgId).set(data)
-      .then(() => {
-        alert('Регистрация успешна!');
-        regPopup.classList.remove('show');
-        initApp(data);
-      })
-      .catch(err => console.error(err));
-  });
-
-  function initApp(userData) {
-    console.log('Добро пожаловать,', userData.person);
-    window.location.href = '../page1/page1.html';
+    outputDiv.textContent = JSON.stringify(webAppData, null, 2);
   }
+
+  // Показываем данные сразу при загрузке
+  showTelegramData();
+
+  // Обновляем данные каждые 500 мс на случай изменений (например, MainButton)
+  setInterval(showTelegramData, 500);
 });
 
 // === Остальной код форматирования полей ===
@@ -161,3 +146,4 @@ if (carInput) {
     e.target.value = value;
   });
 }
+
