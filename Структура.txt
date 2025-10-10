@@ -1,0 +1,35 @@
+telegram-mini-app/
+│
+├── index.html                  # Точка входа / редирект на main_page
+│
+├── main_page/                  # Стартовая/приветственная страница
+│   ├── main_page.html
+│   ├── main_page.css
+│   └── main_page.js
+│
+├── page1/
+│   ├── page1.html
+│   ├── page1.css
+│   └── page1.js
+│
+├── page2/
+│   ├── page2.html
+│   ├── page2.css
+│   └── page2.js
+│
+├── components/                 # Общие компоненты
+│   ├── header/
+│   │   ├── header.html
+│   │   ├── header.css
+│   │   └── header.js
+│   │
+│   └── footer/
+│       ├── footer.html
+│       ├── footer.css
+│       └── footer.js
+│
+├── css/
+│   └── common.css              # Общие стили для всего приложения
+│
+└── js/
+    └── common.js               # Общие скрипты для всего приложения

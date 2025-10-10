@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Главная страница</title>
+  <link rel="stylesheet" href="main_page.css">
+  <!-- Firebase SDK -->
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+</head>
+<body>
+
+  <!-- Верхняя панель -->
+  <div class="top-bar">
+    <span class="welcome-text">Добро пожаловать!</span>
+  </div>
+
+  <!-- Контейнер для попапа регистрации -->
+  <div class="popup" id="regPopup">
+    <div class="popup-content request-card">
+    <form id="regForm" autocomplete="off">
+        <div class="request-status">Регистрация</div>
+
+        <div class="info-row">
+          <input type="text" name="person" class="person-name" placeholder="Имя" required>
+          <div class="car-info">
+            <input type="text" name="car" class="car" placeholder="Машина" required>
+            <input type="text" name="carPlate" class="car-plate" placeholder="Гос номер авто" required>
+          </div>
+        </div>
+
+        <input type="tel" name="phone" class="phone" placeholder="Телефон" required>
+
+        <div class="button-row">
+          <button type="submit">Зарегистрироваться</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script src="main_page.js"></script>
+</body>
+</html>
