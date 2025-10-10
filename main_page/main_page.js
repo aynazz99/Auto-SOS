@@ -13,65 +13,64 @@ firebase.initializeApp(firebaseConfig);
 const db = firebase.database();
 
 // ===== Дожидаемся загрузки страницы =====
-document.addEventListener('DOMContentLoaded', () => {
-  const regPopup = document.getElementById('regPopup');
-  const regForm = document.getElementById('regForm');
+document.addEventListener("DOMContentLoaded", async () => {
+  // Получаем пользователя Telegram или заглушку
+  const tgUser = window.Telegram?.WebApp?.initDataUnsafe?.user || {
+    id: "test_user_123",
+    first_name: "Тест",
+    username: "testuser"
+  };
 
-  const webApp = Telegram?.WebApp;
-  if (!webApp) {
-    alert('Не удалось найти Telegram WebApp.');
+  if (!tgUser || !tgUser.id) {
+    alert("Ошибка: данные Telegram недоступны");
     return;
   }
 
-  webApp.ready(); // уведомляем Telegram, что страница готова
+  const tgId = tgUser.id.toString();
 
-  const tgUser = webApp.initDataUnsafe?.user;
-  if (!tgUser) {
-    alert('Не удалось получить данные пользователя Telegram.');
-    return;
+  // Попап и форма
+  const regPopup = document.getElementById("regPopup");
+  const regForm = document.getElementById("regForm");
+
+  try {
+    const userRef = db.ref(`users/${tgId}`);
+    const snapshot = await userRef.get();
+
+    if (snapshot.exists()) {
+      console.log("Пользователь зарегистрирован:", snapshot.val());
+      initApp(snapshot.val());
+    } else {
+      // Если пользователя нет — показываем попап регистрации
+      regPopup.classList.add("show");
+    }
+  } catch (err) {
+    console.error(err);
   }
 
-  const tgId = tgUser.id;
-  const tgName = tgUser.first_name;
-  const tgUsername = tgUser.username;
-
-  console.log('ID:', tgId, 'Имя:', tgName, 'Username:', tgUsername);
-
-  // ===== Проверка регистрации =====
-  db.ref('users/' + tgId).get()
-    .then(snapshot => {
-      if (snapshot.exists()) {
-        console.log('Пользователь зарегистрирован:', snapshot.val());
-        initApp(snapshot.val());
-      } else {
-        regPopup.classList.add('show'); // показываем попап
-      }
-    }).catch(err => console.error(err));
-
-  // ===== Обработка формы регистрации =====
-  regForm.addEventListener('submit', (e) => {
+  // Обработка формы регистрации
+  regForm.addEventListener("submit", async (e) => {
     e.preventDefault();
     const formData = new FormData(regForm);
     const data = {
-      person: formData.get('person'),
-      car: formData.get('car'),
-      carPlate: formData.get('carPlate'),
-      phone: formData.get('phone')
+      person: formData.get("person"),
+      car: formData.get("car"),
+      carPlate: formData.get("carPlate"),
+      phone: formData.get("phone")
     };
 
-    db.ref('users/' + tgId).set(data)
-      .then(() => {
-        alert('Регистрация успешна!');
-        regPopup.classList.remove('show');
-        initApp(data);
-      })
-      .catch(err => console.error(err));
+    try {
+      await db.ref(`users/${tgId}`).set(data);
+      alert("Регистрация успешна!");
+      regPopup.classList.remove("show");
+      initApp(data);
+    } catch (err) {
+      console.error(err);
+    }
   });
 
-  // ===== Функция инициализации приложения =====
   function initApp(userData) {
-    console.log('Добро пожаловать,', userData.person);
-    window.location.href = '../page1/page1.html';
+    console.log("Добро пожаловать,", userData.person);
+    window.location.href = "../page1/page1.html";
   }
 });
 
@@ -186,4 +185,5 @@ carInput.addEventListener('input', (e) => {
 
   e.target.value = value;
 });
+
 
