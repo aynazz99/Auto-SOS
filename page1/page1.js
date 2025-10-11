@@ -27,7 +27,7 @@ firebase.initializeApp(firebaseConfig);
 const db = firebase.database();
 
 // ==== Пользователь ====
-const userId = 'test_user_123';
+const userId = tgUser.id;
 
 // ==== Попап открытие/закрытие ====
 helpBtn.addEventListener('click', () => openPopup('new'));
@@ -311,3 +311,4 @@ function capitalizeFirstAndTrim(element) {
 capitalizeFirstAndTrim(problemInput);
 capitalizeFirstAndTrim(addressInput);
 capitalizeFirstAndTrim(commentsInput);
+
