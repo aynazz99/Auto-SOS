@@ -122,6 +122,15 @@ async function createRequestCard(userData, problem, address, comments, userId) {
   displayRequestCard({ ...userData, problem, address, comments, createdAt: new Date().toISOString() }, key);
 }
 
+// ==== Получаем пользователя из Telegram ====
+const tgUser = window.Telegram?.WebApp?.initDataUnsafe?.user;
+
+if (!tgUser || !tgUser.id) {
+  alert('Ошибка: не удалось получить данные пользователя из Telegram. Перезапустите Mini App.');
+  throw new Error('tgUser не найден');
+}
+
+
 // ==== Кнопка "Отправить" с проверкой активной заявки ====
 sendBtn.addEventListener('click', () => {
   const problem = document.querySelector('#problem').value.trim();
@@ -133,7 +142,7 @@ sendBtn.addEventListener('click', () => {
     return;
   }
 
-  const userId = String(tgUser.id); 
+  const userId = String(tgUser.id);
   const now = Date.now();
 
   db.ref('requests').orderByChild('userId').equalTo(userId).once('value')
@@ -186,4 +195,3 @@ function capitalizeFirstAndTrim(element) {
 capitalizeFirstAndTrim(document.getElementById('problem'));
 capitalizeFirstAndTrim(document.getElementById('address'));
 capitalizeFirstAndTrim(document.getElementById('comments'));
-
