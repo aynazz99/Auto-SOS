@@ -4,7 +4,12 @@ body {
   background: #f5f5f5;
   margin: 0;
   padding: 0;
+  -webkit-user-select: none; /* Safari, Chrome */
+  -moz-user-select: none;    /* Firefox */
+  -ms-user-select: none;     /* IE/Edge */
+  user-select: none;         /* Современные браузеры */
 }
+
 
 /* === Верхняя панель с кнопкой === */
 .top-bar {
@@ -323,19 +328,6 @@ button:hover {
     font-size: 14px;
   }
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 /* Адаптив для узких экранов */
 @media (max-width: 400px) {
