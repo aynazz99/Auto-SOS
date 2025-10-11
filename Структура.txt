@@ -1,11 +1,8 @@
 telegram-mini-app/
 │
 ├── index.html                  # Точка входа / редирект на main_page
-│
-├── main_page/                  # Стартовая/приветственная страница
-│   ├── main_page.html
-│   ├── main_page.css
-│   └── main_page.js
+├── main_page.css
+├── main_page.js
 │
 ├── page1/
 │   ├── page1.html

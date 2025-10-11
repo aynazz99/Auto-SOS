@@ -67,13 +67,23 @@ body {
 }
 
 /* Статус сверху */
+/* Статус сверху */
 .request-status {
-  text-align: center;
-  font-weight: bold;
-  font-size: 18px;
-  color: #d9534f;
-  margin-bottom: 0px;
+    flex-grow: 1;            /* Занимает все доступное пространство */
+    text-align: center;      /* Центрируем текст внутри */
+    font-weight: bold;       /* Раскомментировал, если нужен жирный текст */
+    font-size: 18px;         /* Раскомментировал, если нужен размер текста */
+    color: #d9534f;          /* Цвет текста */
+    margin-bottom: 0;        /* Убираем отступ снизу */
 }
+
+/* .card-header уже содержит необходимые свойства */
+.card-header {
+    display: flex;
+    justify-content: space-between; /* Баланс между элементами слева и справа */
+    align-items: center;            /* Вертикальное выравнивание по центру */
+}
+
 
 /* Блок с именем, машиной и номером */
 .info-row {
@@ -289,7 +299,7 @@ button {
   border: none;
   border-radius: 8px;
   background: #007aff;
-  color: #fff;
+  color: #ffffff;
   cursor: pointer;
   transition: background 0.2s;
 }
@@ -297,6 +307,82 @@ button {
 button:hover {
   background: #005fcc;
 }
+
+.request-card {
+    /* Должен быть относительным, чтобы позиционировать меню настроек */
+    position: relative; 
+    /* Другие стили карточки... */
+}
+
+.card-header {
+    /* Используем Flexbox для размещения заголовка и кнопки на одной линии */
+    display: flex;
+    justify-content: space-between; /* Раскидывает элементы по краям */
+    align-items: center;
+    /* Другие стили заголовка... */
+}
+
+.card-settings {
+    position: relative; /* Относительное позиционирование для выпадающего меню */
+}
+
+.settings-btn {
+    /* Стилизация самой кнопки (многоточия) */
+    background: none;
+    border: none;
+    font-size: 20px;
+    cursor: pointer;
+    padding: 0 5px;
+    line-height: 1;
+}
+
+.settings-menu {
+    /* Стилизация выпадающего меню */
+    position: absolute;
+    top: 100%; /* Располагает меню сразу под кнопкой */
+    right: 0;
+    background-color: rgb(0, 0, 0); /* Фон меню */
+    border: 1px solid #000000;
+    border-radius: 4px;
+    z-index: 100; /* Гарантирует, что меню будет над другими элементами */
+    padding: 5px;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+    
+    /* Стили для вертикального расположения кнопок внутри меню */
+    display: flex; 
+    flex-direction: column;
+    min-width: 120px; /* Чтобы кнопки были читаемы */
+}
+
+.settings-menu button {
+    /* Стили кнопок внутри меню */
+    background: none;
+    border: none;
+    padding: 8px 10px;
+    text-align: left;
+    cursor: pointer;
+}
+
+.settings-menu button:hover {
+    background-color: #f0f0f0;
+}
+
+/* Также исправьте стиль для самой кнопки многоточия (.settings-btn) */
+.request-card .settings-btn {
+    background: none; /* Убираем синий фон глобальной кнопки */
+    border: none;
+    padding: 0 5px;
+    line-height: 1;
+    font-size: 20px;
+    color: #000000; /* Устанавливаем цвет для точек */
+    border-radius: 0; /* Сбрасываем радиус, если нужно */
+}
+
+
+
+
+
+
 
 
 /* === Адаптив для маленьких экранов === */
@@ -316,6 +402,7 @@ button:hover {
     padding: 12px 8px;
   }
 }
+
 
 @media (max-height: 500px) {
   .popup-content {
