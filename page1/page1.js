@@ -26,6 +26,13 @@ const firebaseConfig = {
 firebase.initializeApp(firebaseConfig);
 const db = firebase.database();
 
+// Получаем данные пользователя из Telegram Web App
+const tgUser = window.Telegram?.WebApp?.initDataUnsafe?.user;
+if (!tgUser) {
+    alert('Не удалось определить пользователя Telegram. Попробуйте открыть в Telegram.');
+    throw new Error('tgUser не определён');
+}
+
 // ==== Пользователь ====
 const userId = tgUser.id;
 
@@ -311,4 +318,5 @@ function capitalizeFirstAndTrim(element) {
 capitalizeFirstAndTrim(problemInput);
 capitalizeFirstAndTrim(addressInput);
 capitalizeFirstAndTrim(commentsInput);
+
 
