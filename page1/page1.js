@@ -133,7 +133,7 @@ sendBtn.addEventListener('click', () => {
     return;
   }
 
-  const userId = 'test_user_123'; 
+  const userId = String(tgUser.id); 
   const now = Date.now();
 
   db.ref('requests').orderByChild('userId').equalTo(userId).once('value')
@@ -186,3 +186,4 @@ function capitalizeFirstAndTrim(element) {
 capitalizeFirstAndTrim(document.getElementById('problem'));
 capitalizeFirstAndTrim(document.getElementById('address'));
 capitalizeFirstAndTrim(document.getElementById('comments'));
+
