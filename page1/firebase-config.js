@@ -18,22 +18,40 @@ if (typeof firebase !== 'undefined') {
     // Инициализация приложения
     firebase.initializeApp(firebaseConfig);
     
+    // --- БЕЗОПАСНОЕ ОПРЕДЕЛЕНИЕ ID ПОЛЬЗОВАТЕЛЯ ИЗ TELEGRAM ---
+    let tempUserId = null;
+    
+    // 1. Проверяем, загружен ли Telegram SDK (объект Telegram.WebApp)
+    if (typeof Telegram !== 'undefined' && Telegram.WebApp) {
+        
+        // 2. Пытаемся получить user.id из initDataUnsafe
+        const user = Telegram.WebApp.initDataUnsafe.user;
+        
+        if (user && user.id) {
+            tempUserId = user.id.toString(); // ID пользователя Telegram (число, конвертируем в строку)
+            console.log(`✅ ID пользователя Telegram успешно получен: ${tempUserId}`);
+        }
+    }
+
+    // Если ID Telegram не получен (приложение запущено не в Telegram или ошибка), 
+    // бросаем ошибку, чтобы НЕ использовать тестовый ID.
+    if (!tempUserId) {
+        console.error("❌ КРИТИЧЕСКАЯ ОШИБКА: Не удалось получить ID пользователя Telegram. Приложение будет работать некорректно.");
+        // Вы можете завершить выполнение скрипта, чтобы избежать записи неправильных данных
+        throw new Error("UserID Telegram не найден.");
+    }
+    // ------------------------------------------------
+    
     // Получение ссылок на базу данных и ID пользователя
     const _db = firebase.database();
-    const _userId = tgUser.id; // Ваш фиксированный ID пользователя
+    const _userId = tempUserId; 
     
-    // Делаем переменные явно глобальными, прикрепляя их к window
-    // Это гарантирует, что они будут доступны в других скриптах, 
-    // загруженных после этого файла.
-    
-    /** @type {firebase.database.Database} Глобальная ссылка на базу данных */
+    // Делаем переменные явно глобальными
     window.db = _db; 
-    
-    /** @type {string} Глобальный ID пользователя */
     window.userId = _userId; 
 
-    console.log("Firebase инициализирован. Глобальные переменные db и userId установлены.");
+    console.log(`Firebase инициализирован. Глобальный userId установлен на: ${_userId}`);
 
 } else {
-    console.error("❌ Библиотека Firebase не загружена. Проверьте ваш HTML перед подключением firebase-config.js!");
+    console.error("❌ Библиотека Firebase не загружена. Проверьте ваш HTML!");
 }
