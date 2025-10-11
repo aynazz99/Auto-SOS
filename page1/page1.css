@@ -335,10 +335,6 @@ button {
   transition: background 0.2s;
 }
 
-button:hover {
-  background: #005fcc;
-}
-
 /*
  * Стили для контейнера кнопки "Помочь"
  * Предполагается, что родительский элемент (например, карточка)
@@ -508,6 +504,122 @@ button:hover {
 .secondary-btn:hover {
     background-color: #e0e0e0;
 }
+
+/* ===== Верхняя панель ===== */
+.top-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom-left-radius: 8px;
+  border-bottom-right-radius: 8px;
+}
+
+/* ===== Кнопка "Новая заявка" ===== */
+.help-btn {
+  height: 35px;
+  margin-right: 10px;
+  background: #007bff;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  padding: 0px 18px;
+  font-size: 13px;
+  cursor: pointer;
+  font-weight: 600;
+  transition: background 0.2s ease;
+}
+
+.help-btn:hover {
+  background: #0066d3;
+}
+
+/* ===== Выпадающий список ===== */
+.dropdown {
+
+  position: relative;
+}
+
+.dropdown-btn {
+  background: #f1f3f4;
+  border: none;
+  border-radius: 8px;
+  padding: 8px;
+  font-size: 15px;
+  color: #333;
+  cursor: pointer;
+  font-weight: 500;
+  position: relative;
+  min-width: 160px;
+}
+
+.dropdown-btn::after {
+  content: "▾";
+  position: absolute;
+  right: 15px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 13px;
+  color: #666;
+}
+
+.dropdown-menu {
+  position: absolute;
+  top: 110%;
+  left: 0;
+  background: #fff;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  width: 100%;
+  opacity: 0;
+  transform: translateY(-5px);
+  pointer-events: none;
+  transition: opacity 0.15s ease, transform 0.15s ease;
+  z-index: 10;
+}
+
+.dropdown-menu.show {
+  opacity: 1;
+  transform: translateY(0);
+  pointer-events: auto;
+}
+
+.dropdown-item {
+  padding: 10px 15px;
+  cursor: pointer;
+  font-size: 15px;
+  color: #333;
+  transition: background 0.15s ease;
+}
+
+.dropdown-item:hover {
+  background: #f0f0f0;
+}
+
+/* ===== Кнопка профиля ===== */
+.profile-btn {
+  background: transparent;
+  border: 1px solid #007bff;
+  color: #007bff;
+  border-radius: 8px;
+  padding: 9px 15px;
+  font-size: 15px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 500;
+  transition: background 0.2s, color 0.2s;
+}
+
+.profile-btn:hover {
+  background: #007bff;
+  color: #fff;
+}
+
+
+
+
 
 
 
