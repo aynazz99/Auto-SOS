@@ -1,7 +1,7 @@
 /* === Базовые стили === */
 body {
   font-family: Arial, sans-serif;
-  background: #f5f5f5;
+  background: #55555596;
   margin: 0;
   padding: 0;
   -webkit-user-select: none; /* Safari, Chrome */
@@ -41,6 +41,37 @@ body {
   background: #005fcc;
 }
 
+/* 3. Стили для кнопки "Профиль" (Справа) - Вариант 1: Иконка */
+.top-bar .profile-btn {
+    /* Физические параметры для круга */
+    width: 40px; 
+    height: 40px;
+    padding: 15; /* Убираем внутренние отступы, чтобы текст/иконка были по центру */
+    margin-left: 10px;
+    /* Расположение контента */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    
+    /* Визуальный стиль */
+    background: none; 
+    border: 1px solid #007bff;
+    border-radius: 50%; /* Круглая форма */
+    color: #007bff; /* Яркий цвет для текста/иконки */
+    font-size: 7px; /* Размер шрифта или иконки */
+    font-weight: 600;
+    cursor: pointer;
+    
+    /* Эффект при наведении */
+    transition: background-color 0.2s ease;
+}
+
+.top-bar .profile-btn:hover {
+    /* Легкий полупрозрачный фон при наведении */
+    background-color: rgba(0, 123, 255, 0.1); 
+    color: #0056b3;
+}
+
 /* === Контейнер заявок === */
 .requests {
   padding: 12px;
@@ -72,7 +103,7 @@ body {
     flex-grow: 1;            /* Занимает все доступное пространство */
     text-align: center;      /* Центрируем текст внутри */
     font-weight: bold;       /* Раскомментировал, если нужен жирный текст */
-    font-size: 18px;         /* Раскомментировал, если нужен размер текста */
+    font-size: 24px;         /* Раскомментировал, если нужен размер текста */
     color: #d9534f;          /* Цвет текста */
     margin-bottom: 0;        /* Убираем отступ снизу */
 }
@@ -147,7 +178,7 @@ body {
   border-radius: 12px;
   font-size: 14px;
   line-height: 1.4;
-  max-width: 90%;
+  max-width: 100%;
   white-space: pre-wrap;
   word-break: break-word;
   position: relative;
@@ -308,6 +339,46 @@ button:hover {
   background: #005fcc;
 }
 
+/*
+ * Стили для контейнера кнопки "Помочь"
+ * Предполагается, что родительский элемент (например, карточка)
+ * имеет установленное позиционирование: position: relative;
+ */
+.request-status-btn {
+    /* Фиксированное позиционирование кнопки в правом нижнем углу блока-родителя */
+    position: absolute; 
+    bottom: 10px;        /* Отступ от нижнего края */
+    right: 15px;         /* Отступ от правого края */
+    
+    /* Обеспечивает, что контейнер кнопки не влияет на макет, пока кнопка позиционирована абсолютно */
+    display: inline-block; 
+}
+
+/*
+ * Стили самой кнопки "Помочь"
+ */
+.request-status-btn button {
+    /* Базовые стили */
+    padding: 10px 60px;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    
+    /* Визуальный стиль (как на изображении) */
+    background-color: #00bfff; /* Яркий синий цвет */
+    color: white;             /* Белый текст */
+    border: none;             /* Убираем стандартную рамку */
+    border-radius: 8px;       /* Скругленные углы */
+    
+    /* Эффект при наведении (для лучшего UX) */
+    transition: background-color 0.2s ease;
+}
+
+
+.request-status-btn button:active {
+    background-color: #004085; /* Еще темнее при нажатии */
+}
+
 .request-card {
     /* Должен быть относительным, чтобы позиционировать меню настроек */
     position: relative; 
@@ -378,7 +449,65 @@ button:hover {
     border-radius: 0; /* Сбрасываем радиус, если нужно */
 }
 
+/* Стиль для полей ввода (подразумевая, что у вас есть стили, как на картинке) */
+#edit-profile-form input[type="text"],
+#edit-profile-form input[type="tel"] {
+    /* Пример стилей для полей */
+    width: 100%;
+    padding: 15px;
+    margin-bottom: 10px;
+    border: 1px solid #ccc;
+    border-radius: 8px;
+    box-sizing: border-box; /* Важно для padding */
+    font-size: 16px;
+}
 
+/* Стиль для заголовка внутри попапа */
+.popup-content h2 {
+    margin-top: 0;
+    margin-bottom: 20px;
+    text-align: center;
+    font-size: 24px;
+}
+
+/* Контейнер для кнопок "Сохранить" и "Отменить" */
+.popup-actions {
+    display: flex;
+    justify-content: space-between; /* Для расположения кнопок по краям */
+    gap: 10px;
+    margin-top: 20px;
+}
+
+.popup-actions button {
+    flex-grow: 1; /* Чтобы кнопки занимали равное пространство */
+    padding: 15px;
+    border: none;
+    border-radius: 12px;
+    font-size: 16px;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+}
+
+/* Основная кнопка "Сохранить" */
+.primary-btn {
+    background-color: #007bff; /* Яркий синий, как на картинке */
+    color: #fff;
+}
+
+.primary-btn:hover {
+    background-color: #0056b3;
+}
+
+/* Вторичная кнопка "Отменить" */
+.secondary-btn {
+    background-color: #f0f0f0; /* Светлый фон */
+    color: #333;
+    border: 1px solid #ccc;
+}
+
+.secondary-btn:hover {
+    background-color: #e0e0e0;
+}
 
 
 

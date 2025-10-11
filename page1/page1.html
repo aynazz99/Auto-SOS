@@ -12,9 +12,10 @@
 <body>
 
   <!-- Верхняя кнопка -->
-  <div class="top-bar">
+<div class="top-bar">
     <button class="help-btn">Новая заявка</button>
-  </div>
+    <button class="profile-btn">Профиль</button> 
+</div>
 
 <div class="popup" id="helpPopup">
   <div class="popup-content">
@@ -30,6 +31,25 @@
   </div>
 </div>
 
+<div id="edit-profile-popup" class="popup">
+    <div class="popup-content">
+        <h2>Редактирование профиля</h2>
+        <form id="edit-profile-form">
+            <input type="text" id="person-input" name="person" placeholder="Имя" required>
+            
+            <input type="text" id="car-input" name="car" placeholder="Машина" required>
+            
+            <input type="text" id="carplate-input" name="carPlate" placeholder="Гос номер авто" required>
+            
+            <input type="tel" id="phone-input" name="phone" placeholder="Телефон" required pattern="[0-9]{1} \([0-9]{3}\) [0-9]{3} [0-9]{2} [0-9]{2}">
+            
+            <div class="popup-actions">
+                <button type="button" id="cancel-edit-btn" class="secondary-btn">Отменить</button>
+                <button type="submit" id="save-profile-btn" class="primary-btn">Сохранить</button>
+            </div>
+        </form>
+    </div>
+</div>
 
   <!-- Список заявок -->
   <div class="requests">
@@ -42,7 +62,11 @@
 <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
 
 <!-- Твой JS файл -->
-<script src="page1.js"></script>
+<script src="firebase-config.js"></script> 
+
+<script src="requests.js"></script> 
+
+<script src="profile.js"></script> 
 
 </body>
 </html>
