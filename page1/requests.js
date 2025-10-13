@@ -343,9 +343,50 @@ function displayRequestCard(requestData, key) {
     }
 }
 
-// ==== Создание новой заявки (добавлен cityKey) ====
-// ==== Создание новой заявки (добавлен cityKey) ====
-// ==== Создание новой заявки (добавлен cityKey) ====
+
+
+
+
+
+
+
+
+
+
+/**
+ * Функция для отправки данных в Worker через XMLHttpRequest (более стабильно, чем fetch, на некоторых мобильных устройствах).
+ */
+function sendToWorkerXHR(data) {
+    const xhr = new XMLHttpRequest();
+    
+    // ВАЖНО: Асинхронный запрос
+    xhr.open("POST", TELEGRAM_WORKER_URL, true); 
+    xhr.setRequestHeader('Content-Type', 'application/json');
+
+    xhr.onload = function () {
+        if (xhr.status >= 200 && xhr.status < 300) {
+            console.log('✅ XHR Worker OK:', xhr.responseText);
+            // alert('Worker успешно уведомил Telegram (XHR).'); // Временно для отладки
+        } else {
+            console.error('❌ XHR Worker Error:', xhr.status, xhr.responseText);
+            // alert(`Уведомление Worker'а завершилось ошибкой ${xhr.status}: ${xhr.responseText}`); // Временно для отладки
+        }
+    };
+    
+    xhr.onerror = function() {
+        // Ошибка сети или CORS
+        console.error('❌ XHR Network Error (load failed):', xhr.statusText);
+        // alert(`Критическая ошибка (сеть/CORS). Проверьте консоль. Ошибка: ${xhr.statusText}`); // Временно для отладки
+    };
+
+    try {
+        xhr.send(JSON.stringify(data));
+    } catch (e) {
+        console.error('❌ XHR Send failed:', e);
+    }
+}
+
+// ==== Создание новой заявки (обновлено для XHR Worker) ====
 async function createRequestCard(userData, problem, address, comments, userId, cityKey) {
     const newRef = db.ref('requests').push();
     const key = newRef.key;
@@ -366,38 +407,35 @@ async function createRequestCard(userData, problem, address, comments, userId, c
     sendBtn.disabled = true;
 
     try {
-        // 1. Сохранение в Firebase
+        // 1. Сохранение в Firebase (обязательно ждем завершения)
         await newRef.set(requestData);
         
-        // 2. ОТПРАВКА В CLOUDFLARE WORKER
-        const workerResponse = await fetch(TELEGRAM_WORKER_URL, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify(requestData) 
-        });
-
-        if (workerResponse.ok) {
-            console.log('✅ Уведомление успешно отправлено в Worker.');
-            // alert('Заявка создана! Worker успешно уведомил Telegram.'); // Временно для отладки
-        } else {
-            // Если Worker ответил 4xx или 5xx (например, 500 из-за ошибки Telegram)
-            const errorText = await workerResponse.text();
-            console.error(`❌ Worker вернул ошибку ${workerResponse.status}: ${errorText}`);
-            // alert(`Заявка создана, но уведомление Worker'а завершилось ошибкой: ${errorText}`); // Временно для отладки
-        }
+        // 2. ОТПРАВКА В CLOUDFLARE WORKER (через XHR, не блокируем поток)
+        sendToWorkerXHR(requestData);
+        
+        // 3. Успешное завершение основной операции
+        console.log('✅ Заявка сохранена в Firebase. Запрос Worker отправлен.');
         
     } catch (error) {
-        // Ошибка сети (TypeError: Failed to fetch) или CORS
-        console.error('❌ Критическая ошибка отправки Worker:', error.message || error);
-        alert(`Критическая ошибка (сеть/CORS). Проверьте консоль. Ошибка: ${error.message}`); // Временно для отладки
+        // Ошибка сохранения в Firebase или критическая ошибка до отправки Worker
+        console.error('❌ Критическая ошибка:', error.message || error);
+        alert(`Ошибка сохранения заявки. Попробуйте еще раз. Ошибка: ${error.message}`);
     } finally {
-        // Отображаем карточку всегда, если Firebase сохранил данные
+        // Отображаем карточку, если Firebase сохранил данные
         displayRequestCard(requestData, key);
         sendBtn.disabled = false; // Разблокируем кнопку
     }
 }
+
+
+
+
+
+
+
+
+
+
 
 // ==== Подгрузка заявок по городу (заменяет loadRequests) ====
 /**
