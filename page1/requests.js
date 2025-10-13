@@ -169,7 +169,7 @@ function handleNewRequest() {
                 if (request.cityKey === window.currentCity) { 
                     const createdTime = new Date(request.createdAt).getTime();
                     // Активная заявка, если ей меньше 3 часов
-                    if (now - createdTime < 3 * 60 * 60 * 1000) hasActive = true; 
+                    if (now - createdTime < 5 * 1000) hasActive = true; 
                 }
             });
 
@@ -230,7 +230,7 @@ function deleteCard(key) {
 // ==== Создание карточки на странице и автоудаление (с проверкой на чужую заявку) ====
 function displayRequestCard(requestData, key) {
     const createdTime = new Date(requestData.createdAt).getTime();
-    const threeHoursInMs = 3 * 60 * 60 * 1000;
+    const threeHoursInMs = 5 * 1000;
     const timeElapsed = Date.now() - createdTime;
     const remaining = Math.max(0, threeHoursInMs - timeElapsed); 
 
@@ -511,3 +511,4 @@ function capitalizeFirstAndTrim(element) {
 capitalizeFirstAndTrim(problemInput);
 capitalizeFirstAndTrim(addressInput);
 capitalizeFirstAndTrim(commentsInput);
+
