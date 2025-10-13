@@ -386,7 +386,9 @@ function sendToWorkerXHR(data) {
     }
 }
 
-// ==== Создание новой заявки (обновлено для XHR Worker) ====
+// ==== Создание новой заявки (добавлен cityKey) ====
+// ==== Создание новой заявки (добавлен cityKey) ====
+// ==== Создание новой заявки (добавлен cityKey) ====
 async function createRequestCard(userData, problem, address, comments, userId, cityKey) {
     const newRef = db.ref('requests').push();
     const key = newRef.key;
@@ -407,21 +409,34 @@ async function createRequestCard(userData, problem, address, comments, userId, c
     sendBtn.disabled = true;
 
     try {
-        // 1. Сохранение в Firebase (обязательно ждем завершения)
+        // 1. Сохранение в Firebase
         await newRef.set(requestData);
         
-        // 2. ОТПРАВКА В CLOUDFLARE WORKER (через XHR, не блокируем поток)
-        sendToWorkerXHR(requestData);
-        
-        // 3. Успешное завершение основной операции
-        console.log('✅ Заявка сохранена в Firebase. Запрос Worker отправлен.');
+        // 2. ОТПРАВКА В CLOUDFLARE WORKER
+        const workerResponse = await fetch(TELEGRAM_WORKER_URL, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(requestData) 
+        });
+
+        if (workerResponse.ok) {
+            console.log('✅ Уведомление успешно отправлено в Worker.');
+            // alert('Заявка создана! Worker успешно уведомил Telegram.'); // Временно для отладки
+        } else {
+            // Если Worker ответил 4xx или 5xx (например, 500 из-за ошибки Telegram)
+            const errorText = await workerResponse.text();
+            console.error(`❌ Worker вернул ошибку ${workerResponse.status}: ${errorText}`);
+            // alert(`Заявка создана, но уведомление Worker'а завершилось ошибкой: ${errorText}`); // Временно для отладки
+        }
         
     } catch (error) {
-        // Ошибка сохранения в Firebase или критическая ошибка до отправки Worker
-        console.error('❌ Критическая ошибка:', error.message || error);
-        alert(`Ошибка сохранения заявки. Попробуйте еще раз. Ошибка: ${error.message}`);
+        // Ошибка сети (TypeError: Failed to fetch) или CORS
+        console.error('❌ Критическая ошибка отправки Worker:', error.message || error);
+        alert(`Критическая ошибка (сеть/CORS). Проверьте консоль. Ошибка: ${error.message}`); // Временно для отладки
     } finally {
-        // Отображаем карточку, если Firebase сохранил данные
+        // Отображаем карточку всегда, если Firebase сохранил данные
         displayRequestCard(requestData, key);
         sendBtn.disabled = false; // Разблокируем кнопку
     }
@@ -496,19 +511,3 @@ function capitalizeFirstAndTrim(element) {
 capitalizeFirstAndTrim(problemInput);
 capitalizeFirstAndTrim(addressInput);
 capitalizeFirstAndTrim(commentsInput);
-
-// =============================================================================
-// II. Логика Профиля (Profile)
-// (Предполагается, что код профиля, который был тут, 
-// перенесен в отдельный файл profile.js и работает корректно)
-// =============================================================================
-
-// ПРИМЕЧАНИЕ: Ваш предоставленный код requests.js также содержал логику профиля. 
-// Лучше перенести ее в отдельный файл profile.js, но для целостности 
-// я оставлю ее тут, если она еще не вынесена. Если логика профиля уже есть в profile.js, 
-// то этот блок можно удалить.
-
-// Здесь были функции profile.js: isPhoneEditValid, isCarPlateEditValid, 
-// loadUserDataForEdit, openEditProfilePopup, closeEditProfilePopup, 
-// saveUserData, validateEditForm, и обработчики событий профиля.
-// Если они не вынесены, их следует оставить здесь или вынести в profile.js.
