@@ -43,6 +43,9 @@ if (typeof db === 'undefined' || typeof userId === 'undefined') {
 // Ссылка на данные пользователя в Firebase
 const userRef = db.ref('users/' + userId);
 
+// URL вашего Cloudflare Worker для публикации в Telegram
+const TELEGRAM_WORKER_URL = 'https://napodmoge.aynazsadriev99.workers.dev/'; 
+
 
 // ==== Попап открытие/закрытие ====
 helpBtn.addEventListener('click', () => {
@@ -276,6 +279,14 @@ function displayRequestCard(requestData, key) {
         </div>
     `;
 
+        const chatBtn = card.querySelector('.request-status-btn button');
+    chatBtn.onclick = () => {
+        // формируем ссылку на чат или тред в канале
+        const chatLink = `https://t.me/${CHANNEL_ID}?thread=${key}`;
+        window.open(chatLink, "_blank"); // откроется в Telegram
+    };
+
+
     // --- Добавление меню настроек для автора ---
     if (requestData.userId === userId) {
         const cardHeader = card.querySelector('.card-header');
@@ -333,6 +344,7 @@ function displayRequestCard(requestData, key) {
 }
 
 // ==== Создание новой заявки (добавлен cityKey) ====
+// ==== Создание новой заявки (добавлен cityKey) ====
 async function createRequestCard(userData, problem, address, comments, userId, cityKey) {
     const newRef = db.ref('requests').push();
     const key = newRef.key;
@@ -349,7 +361,26 @@ async function createRequestCard(userData, problem, address, comments, userId, c
         createdAt: new Date().toISOString()
     };
 
+    // 1. Сохранение в Firebase (как раньше)
     await newRef.set(requestData);
+
+    // 2. ОТПРАВКА В CLOUDFLARE WORKER (НОВАЯ ЛОГИКА)
+    try {
+        await fetch(TELEGRAM_WORKER_URL, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            // Отправляем те же данные, что сохранили в базу
+            body: JSON.stringify(requestData) 
+        });
+        console.log('✅ Уведомление успешно отправлено в Worker.');
+    } catch (error) {
+        // Мы логируем ошибку, но не прерываем создание заявки, 
+        // так как сохранение в базе прошло успешно.
+        console.error('❌ Ошибка отправки уведомления Worker:', error);
+    }
+    // КОНЕЦ НОВОЙ ЛОГИКИ
 
     // Отображаем сразу
     displayRequestCard(requestData, key);
