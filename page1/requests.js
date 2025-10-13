@@ -345,6 +345,7 @@ function displayRequestCard(requestData, key) {
 
 // ==== Создание новой заявки (добавлен cityKey) ====
 // ==== Создание новой заявки (добавлен cityKey) ====
+// ==== Создание новой заявки (добавлен cityKey) ====
 async function createRequestCard(userData, problem, address, comments, userId, cityKey) {
     const newRef = db.ref('requests').push();
     const key = newRef.key;
@@ -357,33 +358,45 @@ async function createRequestCard(userData, problem, address, comments, userId, c
         problem,
         address,
         comments,
-        cityKey, // ⬅️ Сохраняем ключ города в заявке
+        cityKey, 
         createdAt: new Date().toISOString()
     };
+    
+    // Блокируем кнопку отправки на время выполнения операции
+    sendBtn.disabled = true;
 
-    // 1. Сохранение в Firebase (как раньше)
-    await newRef.set(requestData);
-
-    // 2. ОТПРАВКА В CLOUDFLARE WORKER (НОВАЯ ЛОГИКА)
     try {
-        await fetch(TELEGRAM_WORKER_URL, {
+        // 1. Сохранение в Firebase
+        await newRef.set(requestData);
+        
+        // 2. ОТПРАВКА В CLOUDFLARE WORKER
+        const workerResponse = await fetch(TELEGRAM_WORKER_URL, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
             },
-            // Отправляем те же данные, что сохранили в базу
             body: JSON.stringify(requestData) 
         });
-        console.log('✅ Уведомление успешно отправлено в Worker.');
-    } catch (error) {
-        // Мы логируем ошибку, но не прерываем создание заявки, 
-        // так как сохранение в базе прошло успешно.
-        console.error('❌ Ошибка отправки уведомления Worker:', error);
-    }
-    // КОНЕЦ НОВОЙ ЛОГИКИ
 
-    // Отображаем сразу
-    displayRequestCard(requestData, key);
+        if (workerResponse.ok) {
+            console.log('✅ Уведомление успешно отправлено в Worker.');
+            // alert('Заявка создана! Worker успешно уведомил Telegram.'); // Временно для отладки
+        } else {
+            // Если Worker ответил 4xx или 5xx (например, 500 из-за ошибки Telegram)
+            const errorText = await workerResponse.text();
+            console.error(`❌ Worker вернул ошибку ${workerResponse.status}: ${errorText}`);
+            // alert(`Заявка создана, но уведомление Worker'а завершилось ошибкой: ${errorText}`); // Временно для отладки
+        }
+        
+    } catch (error) {
+        // Ошибка сети (TypeError: Failed to fetch) или CORS
+        console.error('❌ Критическая ошибка отправки Worker:', error.message || error);
+        alert(`Критическая ошибка (сеть/CORS). Проверьте консоль. Ошибка: ${error.message}`); // Временно для отладки
+    } finally {
+        // Отображаем карточку всегда, если Firebase сохранил данные
+        displayRequestCard(requestData, key);
+        sendBtn.disabled = false; // Разблокируем кнопку
+    }
 }
 
 // ==== Подгрузка заявок по городу (заменяет loadRequests) ====
