@@ -90,12 +90,14 @@
       const data1 = await res1.json();
       log(`Ответ reverse:\n${JSON.stringify(data1.address, null, 2)}`);
 
-      const addr = data1.address || {};
-      // Сначала ищем city / town
-      if (addr.city) return { name: addr.city, type: "город" };
-      if (addr.town) return { name: addr.town, type: "посёлок" };
-      if (addr.village) return { name: addr.village, type: "село / деревня" };
-      if (addr.hamlet) return { name: addr.hamlet, type: "хутор / маленький населённый пункт" };
+    const addr = data1.address || {};
+    if (addr.city) return { name: addr.city, type: "город" };
+    if (addr.town) return { name: addr.town, type: "посёлок" };
+    if (addr.village) return { name: addr.village, type: "село / деревня" };
+    if (addr.hamlet) return { name: addr.hamlet, type: "хутор / маленький населённый пункт" };
+    // Если нет этих полей — пробуем municipality
+    if (addr.municipality) return { name: addr.municipality, type: "муниципалитет" };
+
 
       // Если не нашли — ищем через search в радиусе 35 км
       const searchUrl = `https://nominatim.openstreetmap.org/search?format=json&accept-language=ru&limit=1&extratags=1&bounded=0&lat=${lat}&lon=${lon}&radius=35000`;
