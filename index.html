@@ -2,46 +2,156 @@
 <html lang="ru">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>Главная страница</title>
-  <link rel="stylesheet" href="main_page.css">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Ближайший город</title>
+  <style>
+    body {
+      font-family: system-ui, sans-serif;
+      background: #f5f6fa;
+      color: #222;
+      margin: 0;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      min-height: 100vh;
+    }
 
-  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    h2 { margin-bottom: 20px; text-align: center; }
 
-  <!-- Firebase SDK -->
-  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+    button {
+      background: #007aff;
+      color: white;
+      border: none;
+      padding: 15px 25px;
+      border-radius: 12px;
+      font-size: 16px;
+      cursor: pointer;
+      transition: background 0.2s;
+      width: 100%;
+      max-width: 320px;
+    }
+
+    button:hover { background: #0062d9; }
+
+    #out {
+      margin-top: 25px;
+      font-size: 16px;
+      line-height: 1.6;
+      text-align: center;
+      background: white;
+      border-radius: 12px;
+      padding: 20px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+      width: 100%;
+      max-width: 360px;
+      word-wrap: break-word;
+    }
+
+    #log {
+      margin-top: 20px;
+      font-size: 14px;
+      background: #1e1e1e;
+      color: #dcdcdc;
+      padding: 10px;
+      border-radius: 8px;
+      width: 100%;
+      max-width: 360px;
+      height: 160px;
+      overflow-y: auto;
+      white-space: pre-wrap;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+    }
+
+    .coords { font-family: monospace; color: #555; font-size: 15px; }
+  </style>
 </head>
 <body>
+  <h2>Определить ближайший город</h2>
+  <button id="btn">Определить</button>
+  <div id="out">Нажмите кнопку, чтобы начать</div>
+  <div id="log"></div>
 
-  <!-- Верхняя панель -->
-  <div class="top-bar">
-    <span class="welcome-text">Добро пожаловать!</span>
-  </div>
+  <script>
+    const logEl = document.getElementById('log');
+    const out = document.getElementById('out');
 
-  <!-- Контейнер для попапа регистрации -->
-  <div class="popup" id="regPopup">
-    <div class="popup-content request-card">
-    <form id="regForm" autocomplete="off">
-        <div class="request-status">Регистрация</div>
+    function log(msg) {
+      const time = new Date().toLocaleTimeString();
+      logEl.textContent += `[${time}] ${msg}\n`;
+      logEl.scrollTop = logEl.scrollHeight;
+      console.log(msg);
+    }
 
-        <div class="info-row">
-          <input type="text" name="person" class="person-name" placeholder="Имя" required>
-          <div class="car-info">
-            <input type="text" name="car" class="car" placeholder="Машина" required>
-            <input type="text" name="carPlate" class="car-plate" placeholder="Гос номер авто" required>
-          </div>
-        </div>
+    async function getNearestCityOrTown(lat, lon) {
+      // Сначала пытаемся через обычный reverse
+      const reverseUrl = `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lon}&format=json&zoom=10&accept-language=ru`;
+      log(`1️⃣ Reverse-запрос: ${reverseUrl}`);
+      const res1 = await fetch(reverseUrl);
+      const data1 = await res1.json();
+      log(`Ответ reverse:\n${JSON.stringify(data1.address, null, 2)}`);
 
-        <input type="tel" name="phone" class="phone" placeholder="Телефон" required>
+      const addr = data1.address || {};
+      if (addr.city || addr.town) {
+        const name = addr.city || addr.town;
+        const type = addr.city ? "город" : "посёлок";
+        log(`✅ Найдено напрямую: ${type} ${name}`);
+        return { name, type };
+      }
 
-        <div class="button-row">
-          <button type="submit">Зарегистрироваться</button>
-        </div>
-      </form>
-    </div>
-  </div>
+      // Если не нашли city/town — ищем вручную в радиусе 20 км
+      const searchUrl = `https://nominatim.openstreetmap.org/search?format=json&accept-language=ru&limit=1&featuretype=city,town&extratags=1&bounded=0&radius=20000&lat=${lat}&lon=${lon}`;
+      log(`2️⃣ Поиск ближайшего города (радиус 20 км): ${searchUrl}`);
+      const res2 = await fetch(searchUrl);
+      const data2 = await res2.json();
+      log(`Ответ search:\n${JSON.stringify(data2, null, 2)}`);
 
-  <script src="main_page.js"></script>
+      if (data2.length > 0) {
+        const obj = data2[0];
+        const name = obj.display_name.split(",")[0];
+        log(`✅ Найден ближайший: ${name}`);
+        return { name, type: "город или посёлок" };
+      }
+
+      log("❌ В радиусе 20 км нет городов или посёлков.");
+      return { name: "не найден", type: "" };
+    }
+
+    document.getElementById('btn').onclick = () => {
+      if (!navigator.geolocation) {
+        out.textContent = "Ваш браузер не поддерживает геолокацию.";
+        log("Геолокация не поддерживается.");
+        return;
+      }
+
+      out.textContent = "Определяем координаты...";
+      log("Запрашиваем разрешение на геолокацию...");
+
+      navigator.geolocation.getCurrentPosition(async pos => {
+        const lat = pos.coords.latitude.toFixed(6);
+        const lon = pos.coords.longitude.toFixed(6);
+        const acc = Math.round(pos.coords.accuracy);
+        log(`Получены координаты: ${lat}, ${lon} (±${acc} м)`);
+
+        try {
+          const result = await getNearestCityOrTown(lat, lon);
+          out.innerHTML = `
+            <div class="coords">
+              Широта: ${lat}<br>
+              Долгота: ${lon}<br>
+              Точность: ±${acc} м
+            </div><br>
+            Ближайший ${result.type}: <b>${result.name}</b>.
+          `;
+        } catch (e) {
+          out.textContent = "Ошибка при определении города.";
+          log("Ошибка: " + e.message);
+        }
+      }, err => {
+        out.textContent = "Не удалось определить координаты: " + err.message;
+        log("Ошибка геолокации: " + err.message);
+      });
+    };
+  </script>
 </body>
 </html>
