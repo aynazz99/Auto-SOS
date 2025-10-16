@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Ближайший город</title>
+  <title>Ближайший город и населённый пункт</title>
   <style>
     body {
       font-family: system-ui, sans-serif;
@@ -57,7 +57,7 @@
       border-radius: 8px;
       width: 100%;
       max-width: 360px;
-      height: 160px;
+      height: 180px;
       overflow-y: auto;
       white-space: pre-wrap;
       box-shadow: 0 2px 6px rgba(0,0,0,0.15);
@@ -67,7 +67,7 @@
   </style>
 </head>
 <body>
-  <h2>Определить ближайший город</h2>
+  <h2>Определить ближайший город и населённый пункт</h2>
   <button id="btn">Определить</button>
   <div id="out">Нажмите кнопку, чтобы начать</div>
   <div id="log"></div>
@@ -84,7 +84,6 @@
     }
 
     async function getNearestCityOrTown(lat, lon) {
-      // Сначала пытаемся через обычный reverse
       const reverseUrl = `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lon}&format=json&zoom=10&accept-language=ru`;
       log(`1️⃣ Reverse-запрос: ${reverseUrl}`);
       const res1 = await fetch(reverseUrl);
@@ -95,26 +94,39 @@
       if (addr.city || addr.town) {
         const name = addr.city || addr.town;
         const type = addr.city ? "город" : "посёлок";
-        log(`✅ Найдено напрямую: ${type} ${name}`);
+        log(`✅ Найден напрямую: ${type} ${name}`);
         return { name, type };
       }
 
-      // Если не нашли city/town — ищем вручную в радиусе 20 км
-      const searchUrl = `https://nominatim.openstreetmap.org/search?format=json&accept-language=ru&limit=1&featuretype=city,town&extratags=1&bounded=0&radius=20000&lat=${lat}&lon=${lon}`;
-      log(`2️⃣ Поиск ближайшего города (радиус 20 км): ${searchUrl}`);
+      // Поиск ближайшего city/town в радиусе 35 км
+      const searchUrl = `https://nominatim.openstreetmap.org/search?format=json&accept-language=ru&limit=1&extratags=1&bounded=0&lat=${lat}&lon=${lon}&radius=35000&q=city,town`;
+      log(`2️⃣ Поиск ближайшего города/посёлка (радиус 35 км): ${searchUrl}`);
       const res2 = await fetch(searchUrl);
       const data2 = await res2.json();
-      log(`Ответ search:\n${JSON.stringify(data2, null, 2)}`);
+      log(`Ответ search city/town:\n${JSON.stringify(data2, null, 2)}`);
 
       if (data2.length > 0) {
         const obj = data2[0];
         const name = obj.display_name.split(",")[0];
-        log(`✅ Найден ближайший: ${name}`);
+        log(`✅ Найден ближайший город/посёлок: ${name}`);
         return { name, type: "город или посёлок" };
       }
 
-      log("❌ В радиусе 20 км нет городов или посёлков.");
-      return { name: "не найден", type: "" };
+      log("❌ В радиусе 35 км нет городов или посёлков.");
+      return { name: null, type: null };
+    }
+
+    async function getNearestAnySettlement(lat, lon) {
+      const url = `https://nominatim.openstreetmap.org/search?format=json&accept-language=ru&limit=1&extratags=1&bounded=0&lat=${lat}&lon=${lon}`;
+      log(`🔹 Поиск ближайшего любого населённого пункта: ${url}`);
+      const res = await fetch(url);
+      const data = await res.json();
+      log(`Ответ search любой населённый пункт:\n${JSON.stringify(data, null, 2)}`);
+      if (data.length > 0) {
+        const name = data[0].display_name.split(",")[0];
+        return name;
+      }
+      return "не найден";
     }
 
     document.getElementById('btn').onclick = () => {
@@ -134,14 +146,20 @@
         log(`Получены координаты: ${lat}, ${lon} (±${acc} м)`);
 
         try {
-          const result = await getNearestCityOrTown(lat, lon);
+          const cityRes = await getNearestCityOrTown(lat, lon);
+          let anySettlement = null;
+          if (!cityRes.name) {
+            anySettlement = await getNearestAnySettlement(lat, lon);
+          }
+
           out.innerHTML = `
             <div class="coords">
               Широта: ${lat}<br>
               Долгота: ${lon}<br>
               Точность: ±${acc} м
             </div><br>
-            Ближайший ${result.type}: <b>${result.name}</b>.
+            ${cityRes.name ? `Ближайший город/посёлок: <b>${cityRes.name}</b>` : ''}
+            ${!cityRes.name && anySettlement ? `Ближайший населённый пункт: <b>${anySettlement}</b>` : ''}
           `;
         } catch (e) {
           out.textContent = "Ошибка при определении города.";
