@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Ближайший город и населённый пункт</title>
+  <title>Ближайший населённый пункт</title>
   <style>
     body {
       font-family: system-ui, sans-serif;
@@ -67,7 +67,7 @@
   </style>
 </head>
 <body>
-  <h2>Определить ближайший город и населённый пункт</h2>
+  <h2>Определить ближайший населённый пункт</h2>
   <button id="btn">Определить</button>
   <div id="out">Нажмите кнопку, чтобы начать</div>
   <div id="log"></div>
@@ -83,7 +83,7 @@
       console.log(msg);
     }
 
-    async function getNearestCityOrTown(lat, lon) {
+    async function getNearestPlace(lat, lon) {
       const reverseUrl = `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lon}&format=json&zoom=10&accept-language=ru`;
       log(`1️⃣ Reverse-запрос: ${reverseUrl}`);
       const res1 = await fetch(reverseUrl);
@@ -91,42 +91,27 @@
       log(`Ответ reverse:\n${JSON.stringify(data1.address, null, 2)}`);
 
       const addr = data1.address || {};
-      if (addr.city || addr.town) {
-        const name = addr.city || addr.town;
-        const type = addr.city ? "город" : "посёлок";
-        log(`✅ Найден напрямую: ${type} ${name}`);
-        return { name, type };
-      }
+      // Сначала ищем city / town
+      if (addr.city) return { name: addr.city, type: "город" };
+      if (addr.town) return { name: addr.town, type: "посёлок" };
+      if (addr.village) return { name: addr.village, type: "село / деревня" };
+      if (addr.hamlet) return { name: addr.hamlet, type: "хутор / маленький населённый пункт" };
 
-      // Поиск ближайшего city/town в радиусе 35 км
-      const searchUrl = `https://nominatim.openstreetmap.org/search?format=json&accept-language=ru&limit=1&extratags=1&bounded=0&lat=${lat}&lon=${lon}&radius=35000&q=city,town`;
-      log(`2️⃣ Поиск ближайшего города/посёлка (радиус 35 км): ${searchUrl}`);
+      // Если не нашли — ищем через search в радиусе 35 км
+      const searchUrl = `https://nominatim.openstreetmap.org/search?format=json&accept-language=ru&limit=1&extratags=1&bounded=0&lat=${lat}&lon=${lon}&radius=35000`;
+      log(`2️⃣ Поиск ближайшего населённого пункта (радиус 35 км): ${searchUrl}`);
       const res2 = await fetch(searchUrl);
       const data2 = await res2.json();
-      log(`Ответ search city/town:\n${JSON.stringify(data2, null, 2)}`);
+      log(`Ответ search:\n${JSON.stringify(data2, null, 2)}`);
 
       if (data2.length > 0) {
         const obj = data2[0];
         const name = obj.display_name.split(",")[0];
-        log(`✅ Найден ближайший город/посёлок: ${name}`);
-        return { name, type: "город или посёлок" };
+        const type = obj.type || "неизвестно";
+        return { name, type };
       }
 
-      log("❌ В радиусе 35 км нет городов или посёлков.");
-      return { name: null, type: null };
-    }
-
-    async function getNearestAnySettlement(lat, lon) {
-      const url = `https://nominatim.openstreetmap.org/search?format=json&accept-language=ru&limit=1&extratags=1&bounded=0&lat=${lat}&lon=${lon}`;
-      log(`🔹 Поиск ближайшего любого населённого пункта: ${url}`);
-      const res = await fetch(url);
-      const data = await res.json();
-      log(`Ответ search любой населённый пункт:\n${JSON.stringify(data, null, 2)}`);
-      if (data.length > 0) {
-        const name = data[0].display_name.split(",")[0];
-        return name;
-      }
-      return "не найден";
+      return { name: "не найден", type: "" };
     }
 
     document.getElementById('btn').onclick = () => {
@@ -146,11 +131,7 @@
         log(`Получены координаты: ${lat}, ${lon} (±${acc} м)`);
 
         try {
-          const cityRes = await getNearestCityOrTown(lat, lon);
-          let anySettlement = null;
-          if (!cityRes.name) {
-            anySettlement = await getNearestAnySettlement(lat, lon);
-          }
+          const place = await getNearestPlace(lat, lon);
 
           out.innerHTML = `
             <div class="coords">
@@ -158,11 +139,12 @@
               Долгота: ${lon}<br>
               Точность: ±${acc} м
             </div><br>
-            ${cityRes.name ? `Ближайший город/посёлок: <b>${cityRes.name}</b>` : ''}
-            ${!cityRes.name && anySettlement ? `Ближайший населённый пункт: <b>${anySettlement}</b>` : ''}
+            Ближайший населённый пункт: <b>${place.name}</b><br>
+            Тип: <b>${place.type}</b>
           `;
+          log(`✅ Найден ближайший населённый пункт: ${place.name} (${place.type})`);
         } catch (e) {
-          out.textContent = "Ошибка при определении города.";
+          out.textContent = "Ошибка при определении населённого пункта.";
           log("Ошибка: " + e.message);
         }
       }, err => {
