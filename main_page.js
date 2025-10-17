@@ -307,3 +307,4 @@ function validateForm() {
 if (carPlateInput) carPlateInput.addEventListener('input', validateForm);
 if (phoneInput) phoneInput.addEventListener('input', validateForm);
 
+
