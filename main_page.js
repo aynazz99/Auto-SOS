@@ -34,7 +34,7 @@ if (!tgUser) {
   alert('Не удалось получить данные пользователя Telegram.');
 }
 
-const tgId = 'test_user_123';
+const tgId = tgUser.id;;
 // Попап, форма и кнопка
 const regPopup = document.getElementById('regPopup');
 const regForm = document.getElementById('regForm');
@@ -306,5 +306,6 @@ function validateForm() {
 // Вызов валидации при изменении полей
 if (carPlateInput) carPlateInput.addEventListener('input', validateForm);
 if (phoneInput) phoneInput.addEventListener('input', validateForm);
+
 
 
