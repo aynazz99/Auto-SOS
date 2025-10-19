@@ -25,15 +25,16 @@
     <form id="regForm" autocomplete="off">
         <div class="request-status">Регистрация</div>
 
-        <div class="info-row">
-          <input type="text" name="person" class="person-name" placeholder="Имя" required>
-          <div class="car-info">
-            <input type="text" name="car" class="car" placeholder="Машина" required>
-            <input type="text" name="carPlate" class="car-plate" placeholder="Гос номер авто" required>
-          </div>
-        </div>
+        <input type="text" name="person" class="person-name" placeholder="Имя" required>
+        <div class="city-wrapper">
+          <input type="text" name="city" class="person-city" placeholder="Населенный пункт" required autocomplete="off">
+          <svg class="city-dropdown-icon" viewBox="0 0 24 24" width="20" height="20">
+                  <path d="M7 10l5 5 5-5z"/> 
+              </svg>
+          <ul class="city-list"></ul>
+      </div>
 
-        <input type="tel" name="phone" class="phone" placeholder="Телефон" required>
+        <input type="tel" name="phone" class="phone" placeholder="Номер телефона" required>
 
         <div class="button-row">
           <button type="submit">Зарегистрироваться</button>

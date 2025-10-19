@@ -15,7 +15,7 @@
   <button class="help-btn">Новая заявка</button>
 
 <div class="dropdown">
-  <button class="dropdown-btn" id="cityBtn">Выберите город</button>
+
   <div class="dropdown-menu" id="cityMenu"></div>
 </div>
 
@@ -29,9 +29,34 @@
 <div class="popup" id="helpPopup">
   <div class="popup-content">
     <div class="request-status">Новая заявка на помощь</div>
+    
     <input type="text" id="problem" placeholder="Какая проблема? (коротко)" autocomplete="off" maxlength="25" required>
-    <input type="text" id="address" placeholder="Адрес или примерное место" autocomplete="off" maxlength="35" required>
     <textarea id="comments" placeholder="Комментарии (необязательно)" autocomplete="off" maxlength="120" rows="4"></textarea>
+
+    <!-- Три выпадающих списка -->
+    <div class="city-wrapper">
+      <input type="text" id="nearbicity1" name="location1" placeholder="Ближайший город 1" autocomplete="off" required>
+      <svg class="city-dropdown-icon" viewBox="0 0 24 24" width="20" height="20">
+        <path d="M7 10l5 5 5-5z"/>
+      </svg>
+      <ul id="city-list-1" class="city-list"></ul>
+    </div>
+
+    <div class="city-wrapper">
+      <input type="text" id="nearbicity2" name="location2" placeholder="Ближайший город 2" autocomplete="off" required>
+      <svg class="city-dropdown-icon" viewBox="0 0 24 24" width="20" height="20">
+        <path d="M7 10l5 5 5-5z"/>
+      </svg>
+      <ul id="city-list-2" class="city-list"></ul>
+    </div>
+
+    <div class="city-wrapper">
+      <input type="text" id="nearbicity3" name="location3" placeholder="Ближайший город 3" autocomplete="off" required>
+      <svg class="city-dropdown-icon" viewBox="0 0 24 24" width="20" height="20">
+        <path d="M7 10l5 5 5-5z"/>
+      </svg>
+      <ul id="city-list-3" class="city-list"></ul>
+    </div>
 
     <div class="button-row">
       <button id="sendBtn">Отправить</button>
@@ -40,18 +65,23 @@
   </div>
 </div>
 
+
 <div id="edit-profile-popup" class="popup">
     <div class="popup-content">
         <h2>Редактирование профиля</h2>
         <form id="edit-profile-form">
             <input type="text" id="person-input" name="person" placeholder="Имя" required>
-            
-            <input type="text" id="car-input" name="car" placeholder="Машина" required>
-            
-            <input type="text" id="carplate-input" name="carPlate" placeholder="Гос номер авто" required>
-            
+
             <input type="tel" id="phone-input" name="phone" placeholder="Телефон" required pattern="[0-9]{1} \([0-9]{3}\) [0-9]{3} [0-9]{2} [0-9]{2}">
             
+            <div class="city-wrapper">
+              <input type="text" id="city-edit-input" name="location" placeholder="Населенный пункт" required>
+              <svg class="city-dropdown-icon" viewBox="0 0 24 24" width="20" height="20">
+                <path d="M7 10l5 5 5-5z"/>
+              </svg>
+              <ul id="city-edit-list" class="city-list"></ul>
+            </div>
+
             <div class="popup-actions">
                 <button type="button" id="cancel-edit-btn" class="secondary-btn">Отменить</button>
                 <button type="submit" id="save-profile-btn" class="primary-btn">Сохранить</button>

@@ -56,7 +56,7 @@ body {
   gap: 12px;
   padding: 20px;
   box-sizing: border-box;
-  overflow-y: auto;
+  overflow-y: none;
   transform: translateY(100%);
   transition: transform 0.3s ease, opacity 0.3s ease;
 }
@@ -84,34 +84,20 @@ margin: 5px 0px ;
   box-sizing: border-box;
 }
 
-/* Блок для машины и номера */
-.car-info {
-  display: flex;
-  justify-content: space-between; /* растягивает элементы к краям */
-  gap: 10px; /* промежуток между полями */
-}
 
-.car-info input {
-  flex: 1;           /* оба инпута делят доступное место поровну */
-  min-width: 0;      /* чтобы инпуты не вылезали за контейнер */
-}
-
-.car-info input:first-child {
-  margin-right: 5px; /* небольшой отступ справа */
-}
-
-.car-info input:last-child {
-  margin-left: 5px;      /* небольшой отступ слева */
-  border: 3px solid black; /* толстая чёрная рамка */
-  border-radius: 10px;     /* сохраняем скругление */
-  padding: 12px;           /* чтобы текст не прилипал к рамке */
-}
 
 
 /* Красная рамка для пустого или неверного поля */
+
 input:invalid {
-  border: 0.5px solid red;
-  background-color: #fff3f3;
+    border: 0.5px solid red;
+    background-color: #fff3f3;
+}
+
+/* ⬅️ НОВЫЙ СЕЛЕКТОР для полей, валидируемых JS (Телефон, Город) */
+input[aria-invalid="true"] {
+    border: 0.5px solid red !important;
+    background-color: #fff3f3 !important;
 }
 
 /* Когда фокус на поле */
@@ -149,6 +135,84 @@ button {
 
 button:hover {
   background: #005fcc;
+}
+
+
+
+.info-row {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  width: 300px;
+}
+
+
+/* --- Стили для стрелки и контейнера --- */
+
+
+
+/* --- Контейнер и поле ввода --- */
+
+.city-wrapper {
+    position: relative; 
+    display: flex; /* Обеспечивает, что дочерние элементы выстраиваются в ряд */
+    align-items: center;
+}
+
+.person-city {
+    flex-grow: 1; 
+    padding-right: 35px !important; /* Важно: отступ для стрелки */
+    /* Остальные ваши стили для input */
+}
+
+/* --- Стилизация и анимация стрелки --- */
+
+.city-dropdown-icon {
+    position: absolute;
+    right: 10px;
+    width: 18px;
+    height: 18px;
+    fill: #555;
+    transition: transform 0.3s ease; 
+    cursor: pointer; /* чтобы курсор менялся */
+    pointer-events: auto; /* клики теперь проходят */
+}
+
+
+/* Стиль при открытом списке (класс добавляется через JS) */
+.city-dropdown-icon.rotated {
+    transform: rotate(180deg); 
+    fill: #007bff; /* Можно изменить цвет при активации */}
+
+.city-wrapper {
+  position: relative;
+  width: 100%;
+}
+
+.city-list {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  background: white;
+  border: 1px solid #ccc;
+  border-top: none;
+  max-height: 180px;
+  overflow-y: auto;
+  z-index: 10;
+  display: none;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.city-list li {
+  padding: 8px 10px;
+  cursor: pointer;
+}
+
+.city-list li:hover {
+  background-color: #f0f0f0;
 }
 
 /* === Адаптив для маленьких экранов === */
