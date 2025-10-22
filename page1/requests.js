@@ -31,7 +31,6 @@ if (typeof db === 'undefined' || typeof userId === 'undefined') {
 }
 
 const userRef = db.ref('users/' + userId);
-const TELEGRAM_WORKER_URL = 'https://napodmoge.aynazsadriev99.workers.dev/';
 // Предполагается, что CHANNEL_ID определен в другом месте (например, firebase-config.js)
 const CHANNEL_ID = 'название_вашего_канала'; // Замените на реальный ID или определите в firebase-config.js
 
@@ -299,51 +298,84 @@ function displayRequestCard(requestData, key) {
 async function createRequestCard(userData, problem, comments, userId, userCityKey, nearbyCities) { 
     const newRef = db.ref('requests').push();
     const key = newRef.key;
-    
-    // Сохраняем ключ города в Firebase под именем cityKey
-    const requestData = { userId, person: userData.person, phone: userData.phone, problem, comments, cityKey: userCityKey, nearbyCities, createdAt: new Date().toISOString() };
+
+    // Формируем объект данных заявки
+    const requestData = {
+        userId,
+        person: userData.person,
+        phone: userData.phone,
+        problem,
+        comments,
+        cityKey: userCityKey,
+        // Проверяем nearbyCities, чтобы не было undefined
+        nearbyCities: nearbyCities ?? null,
+        createdAt: new Date().toISOString()
+    };
 
     sendBtn.disabled = true;
+
     try {
-        await newRef.set(requestData); 
-        // Отправка данных в Worker для уведомления
-        const workerResponse = await fetch(TELEGRAM_WORKER_URL, { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(requestData) });
-        if(workerResponse.ok) console.log('✅ Уведомление успешно отправлено в Worker.');
-        else console.error('❌ Worker вернул ошибку', await workerResponse.text());
-    } catch(error) { console.error('❌ Ошибка отправки Worker/Firebase:', error); alert(`Ошибка: ${error.message || error}`); }
-    finally { displayRequestCard(requestData, key); sendBtn.disabled = false; }
+        // Сохраняем заявку в Firebase
+        await newRef.set(requestData);
+        console.log('✅ Заявка успешно сохранена в Firebase');
+    } catch (error) {
+        console.error('❌ Ошибка при сохранении заявки в Firebase:', error);
+        alert(`Ошибка: ${error.message || error}`);
+    } finally {
+        displayRequestCard(requestData, key);
+        sendBtn.disabled = false;
+    }
 }
 
+
 // ==== ЗАГРУЗКА ЗАЯВОК ПОЛЬЗОВАТЕЛЯ (фильтр по userId) ====
-async function loadUserRequests() {
+/**
+ * Загружает и отображает только заявки, созданные текущим пользователем.
+ * (На основе логики requests.js)
+ */
+async function loadRequests() {
     
+    // Проверка наличия userId
     if (!userId) {
+        // Отображение сообщения об ошибке и отключение кнопки "Помощь"
         requestsContainer.innerHTML = '<div class="request-card empty">Ошибка: Пользователь не авторизован.</div>';
-        helpBtn.disabled = true;
+        // Предполагается, что helpBtn доступен
+        if (typeof helpBtn !== 'undefined') helpBtn.disabled = true;
         return;
     }
 
-    helpBtn.disabled = false; 
+    // Включение кнопки "Помощь" (если она была отключена)
+    if (typeof helpBtn !== 'undefined') helpBtn.disabled = false; 
 
+    // Индикатор загрузки
     requestsContainer.innerHTML = '<div class="request-card empty">Загрузка ваших заявок...</div>';
     
-    // 🛑 ИЗМЕНЕНИЕ: Фильтруем заявки по userId
+    // 🛑 Ключевой шаг: Запрос к Firebase с фильтрацией по текущему userId
     db.ref('requests').orderByChild('userId').equalTo(userId).once('value')
         .then(snapshot => {
-            requestsContainer.innerHTML = '';
+            requestsContainer.innerHTML = ''; // Очистка индикатора загрузки
             const data = snapshot.val();
             
             if (!data) {
+                // Если нет данных, отображаем пустую карточку
                 checkAndAddEmptyCard();
                 return;
             }
             
-            // Вывод в обратном порядке (самые новые сверху)
+            // Вывод в обратном порядке (самые новые сверху), как в requests.js
             Object.entries(data).reverse().forEach(([key, request]) => displayRequestCard(request, key));
+            
+            // Проверка и добавление пустой карточки, если все заявки, например, просрочены и удалены
             checkAndAddEmptyCard(); 
         })
-        .catch(console.error);
+        .catch(error => {
+            console.error('Ошибка загрузки заявок:', error);
+            requestsContainer.innerHTML = '<div class="request-card empty">Ошибка при загрузке заявок.</div>';
+        });
 }
+
+// Вызов функции при загрузке
+loadRequests();
 
 // ⚠️ ОБНОВЛЕНИЕ: Перенаправляем глобальный вызов на новую функцию
 window.loadRequests = loadUserRequests; 
