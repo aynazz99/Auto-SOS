@@ -34,7 +34,9 @@ if (!tgUser) {
 }
 
 // Используем заглушку, как было в вашем коде
-const tgId = "test_user";
+const tgId =  tgUser.id;
+// const tgId = "test_user"; тестовые данные
+
 
 // Попап, форма и кнопка
 const regPopup = document.getElementById('regPopup');
@@ -335,4 +337,5 @@ if (phoneInput) {
 if (phoneInput) phoneInput.addEventListener('input', validateForm);
 if (nameInput) nameInput.addEventListener('input', validateForm);
 if (cityInput) cityInput.addEventListener('input', validateForm);
+
 if (cityInput) cityInput.addEventListener('blur', validateForm);
