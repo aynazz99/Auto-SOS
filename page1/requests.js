@@ -99,9 +99,8 @@ function updateCityCheckboxList(searchTerm) {
     const finalCityList = selectedMatchingCities.concat(unselectedMatchingCities);
 
     // 5. Ограничиваем список для отображения
-    const DISPLAY_LIMIT = 15; 
+    const DISPLAY_LIMIT = 55; 
     const citiesToDisplay = finalCityList.slice(0, DISPLAY_LIMIT);
-
 
     if (citiesToDisplay.length === 0) {
         const noResults = document.createElement('li');
@@ -110,6 +109,7 @@ function updateCityCheckboxList(searchTerm) {
             ? `Город "${searchTerm}" не найден. Проверьте написание.` 
             : 'Начните вводить название города...';
         cityCheckboxList.appendChild(noResults);
+        return;
     }
 
     citiesToDisplay.forEach(city => {
@@ -117,17 +117,34 @@ function updateCityCheckboxList(searchTerm) {
         item.classList.add('city-item'); 
 
         const isChecked = selectedCitiesMap.has(city);
-
         const safeId = city.replace(/\s/g, '_').replace(/[^\w-]/g, ''); 
+
         item.innerHTML = `
             <input type="checkbox" id="city-cb-${safeId}" value="${city}" ${isChecked ? 'checked' : ''}>
             <label for="city-cb-${safeId}">${city}</label>
         `;
 
-        item.querySelector('input[type="checkbox"]').addEventListener('change', (e) => {
+        const checkbox = item.querySelector('input[type="checkbox"]');
+
+        // Обрабатываем прямое изменение чекбокса
+        checkbox.addEventListener('change', (e) => {
             handleCityCheckboxChange(e.target.value, e.target.checked, e.target);
         });
-        
+
+        // Обработчик клика по строке (названию города)
+        item.addEventListener('click', (e) => {
+            // Если клик пришёл прямо по input — ничего не делаем, change всё обработает
+            if (e.target.tagName.toLowerCase() === 'input') return;
+
+            // Предотвращаем двойное переключение (label сам по себе переключает input)
+            e.preventDefault();
+            e.stopPropagation();
+
+            // Меняем состояние вручную
+            checkbox.checked = !checkbox.checked;
+            handleCityCheckboxChange(checkbox.value, checkbox.checked, checkbox);
+        });
+
         cityCheckboxList.appendChild(item);
     });
 
@@ -135,50 +152,67 @@ function updateCityCheckboxList(searchTerm) {
     cityCheckboxList.style.display = 'block'; 
 }
 
+
+
 /**
  * Обрабатывает изменение состояния чекбокса (выбор/снятие выбора).
  */
 function handleCityCheckboxChange(cityValue, isChecked, checkbox) {
     if (isChecked) {
-        // Проверка лимита (1-3 города)
         if (selectedCitiesMap.size >= 3) {
             alert('Можно выбрать не более 3 ближайших городов.');
-            checkbox.checked = false; // Отменяем выбор
+            checkbox.checked = false;
             return;
         }
         selectedCitiesMap.set(cityValue, true);
     } else {
         selectedCitiesMap.delete(cityValue);
     }
-    
-    // Очищаем поле ввода, чтобы пользователь мог начать новый поиск
-    nearbyCityInput.value = ''; 
-    
-    // Вызов updateSelectedCityInput обновит плейсхолдер и список
-    updateSelectedCityInput(); 
+
+    const selectedCount = selectedCitiesMap.size;
+    const shouldKeepOpen = selectedCount < 3;
+
+    // Не очищаем поле при промежуточных выборах
+    if (!shouldKeepOpen) {
+        nearbyCityInput.value = '';
+    }
+
+    updateSelectedCityInput(shouldKeepOpen);
 }
+
+
+
 
 /**
  * Обновляет плейсхолдер, показывая выбранные города, и обновляет список чекбокса.
+ * @param {boolean} [keepOpen=false] Если true — список не скрывается после обновления.
  */
-function updateSelectedCityInput() {
+function updateSelectedCityInput(keepOpen = false) {
     const selectedCities = Array.from(selectedCitiesMap.keys());
     
     // Обновляем плейсхолдер, показывая количество выбранных городов.
     if (selectedCities.length > 0) {
-        // Отображаем выбранные города в плейсхолдере
         const selectedNames = selectedCities.join(', ');
         nearbyCityInput.placeholder = `Выбрано: ${selectedNames} (${selectedCities.length}/3)`;
     } else {
         nearbyCityInput.placeholder = "Введите и выберите ближайшие города (1-3)";
     }
 
-    // Проверка состояния required (требуется, если ничего не выбрано)
+    // Проверяем required (если ничего не выбрано)
     nearbyCityInput.required = selectedCities.length === 0;
 
-    // Обновляем список, используя текущий поисковый термин (который может быть пустым после выбора)
-    updateCityCheckboxList(getCurrentSearchTerm(nearbyCityInput.value)); 
+    // Обновляем список с учётом текущего поискового термина
+    updateCityCheckboxList(getCurrentSearchTerm(nearbyCityInput.value));
+
+    // Если выбран максимум (3) — закрываем список, иначе оставляем открытым
+    if (!keepOpen) {
+        const selectedCount = selectedCities.length;
+        if (selectedCount >= 3) {
+            cityCheckboxList.style.display = 'none';
+        }
+    }
 }
+
 
 
 /**
