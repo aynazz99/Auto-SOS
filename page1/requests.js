@@ -13,7 +13,18 @@ let sendBtn = popup.querySelector('#sendBtn');
 let closeBtn = popup.querySelector('#closeBtn');
 const popupTitle = popup.querySelector('.request-status');
 
-// ==== Элементы страницы: Профиль ====
+// ==== Элементы для выбора городов с чекбоксами ====
+// ⚠️ Предполагается, что в HTML есть <input id="nearbycity-input"> и <ul id="city-checkbox-list">
+const nearbyCityInput = document.getElementById('nearbycity-input');
+const cityCheckboxList = document.getElementById('city-checkbox-list');
+
+// ГЛОБАЛЬНЫЕ ПЕРЕМЕННЫЕ ДЛЯ ГОРОДОВ
+let ALL_CITIES = []; // Все города из базы
+// Карта для отслеживания выбранных городов: { 'Город A': true, 'Город Б': true }
+const selectedCitiesMap = new Map(); 
+// =================================================
+
+// ==== Элементы страницы: Профиль (оставлены для контекста) ====
 const profileBtn = document.querySelector('.profile-btn');
 const editProfilePopup = document.getElementById('edit-profile-popup');
 const editProfileForm = document.getElementById('edit-profile-form');
@@ -24,18 +35,202 @@ const personEditInput = document.getElementById('person-input');
 const phoneEditInput = document.getElementById('phone-input');
 
 // =============================================================================
-// I. Логика Заявок
+// I. Логика Заявок (Начало)
 // =============================================================================
+
 if (typeof db === 'undefined' || typeof userId === 'undefined') {
-    console.error("❌ Глобальные переменные db или userId не определены. Проверьте загрузку firebase-config.js.");
+    console.error("❌ Глобальные переменные db или userId не определены.");
 }
 
 const userRef = db.ref('users/' + userId);
-// Предполагается, что CHANNEL_ID определен в другом месте (например, firebase-config.js)
-const CHANNEL_ID = 'название_вашего_канала'; // Замените на реальный ID или определите в firebase-config.js
-
-// Время жизни заявки (10 минут)
+const CHANNEL_ID = 'название_вашего_канала'; 
 const REQUEST_TIMEOUT_MS = 10 * 60 * 1000;
+
+// -----------------------------------------------------------------------------
+// II. Логика Загрузки Городов и Поиска с Чекбоксами
+// -----------------------------------------------------------------------------
+
+/**
+ * Загружает список всех городов из Firebase, используя путь 'location'.
+ */
+async function loadAllCities() {
+    try {
+        const snapshot = await db.ref('location').once('value'); 
+        if (snapshot.exists()) {
+            ALL_CITIES = Object.values(snapshot.val()); 
+            
+            console.log(`✅ Города загружены для заявок: ${ALL_CITIES.length}`);
+        } else {
+            console.warn("База городов 'location' пуста. Проверьте путь в Firebase.");
+        }
+    } catch (error) {
+        console.error("Ошибка загрузки списка городов из Firebase:", error);
+    }
+}
+
+/**
+ * Обновляет список чекбоксов на основе поискового запроса.
+ * @param {string} searchTerm Строка для поиска.
+ */
+function updateCityCheckboxList(searchTerm) {
+    cityCheckboxList.innerHTML = '';
+    const lowerSearchTerm = searchTerm.toLowerCase();
+    
+    // 1. Фильтруем города по поисковому запросу
+    const matchingCities = ALL_CITIES.filter(city => city.toLowerCase().includes(lowerSearchTerm));
+    
+    // 2. Разделяем на выбранные и невыбранные
+    const selectedMatchingCities = [];
+    const unselectedMatchingCities = [];
+
+    matchingCities.forEach(city => {
+        if (selectedCitiesMap.has(city)) {
+            selectedMatchingCities.push(city);
+        } else {
+            unselectedMatchingCities.push(city);
+        }
+    });
+
+    // 3. Сортируем каждую группу по алфавиту
+    selectedMatchingCities.sort();
+    unselectedMatchingCities.sort();
+
+    // 4. Объединяем: выбранные + невыбранные
+    const finalCityList = selectedMatchingCities.concat(unselectedMatchingCities);
+
+    // 5. Ограничиваем список для отображения
+    const DISPLAY_LIMIT = 15; 
+    const citiesToDisplay = finalCityList.slice(0, DISPLAY_LIMIT);
+
+
+    if (citiesToDisplay.length === 0) {
+        const noResults = document.createElement('li');
+        noResults.classList.add('city-item', 'no-results');
+        noResults.textContent = searchTerm 
+            ? `Город "${searchTerm}" не найден. Проверьте написание.` 
+            : 'Начните вводить название города...';
+        cityCheckboxList.appendChild(noResults);
+    }
+
+    citiesToDisplay.forEach(city => {
+        const item = document.createElement('li');
+        item.classList.add('city-item'); 
+
+        const isChecked = selectedCitiesMap.has(city);
+
+        const safeId = city.replace(/\s/g, '_').replace(/[^\w-]/g, ''); 
+        item.innerHTML = `
+            <input type="checkbox" id="city-cb-${safeId}" value="${city}" ${isChecked ? 'checked' : ''}>
+            <label for="city-cb-${safeId}">${city}</label>
+        `;
+
+        item.querySelector('input[type="checkbox"]').addEventListener('change', (e) => {
+            handleCityCheckboxChange(e.target.value, e.target.checked, e.target);
+        });
+        
+        cityCheckboxList.appendChild(item);
+    });
+
+    // Убеждаемся, что список виден после обновления
+    cityCheckboxList.style.display = 'block'; 
+}
+
+/**
+ * Обрабатывает изменение состояния чекбокса (выбор/снятие выбора).
+ */
+function handleCityCheckboxChange(cityValue, isChecked, checkbox) {
+    if (isChecked) {
+        // Проверка лимита (1-3 города)
+        if (selectedCitiesMap.size >= 3) {
+            alert('Можно выбрать не более 3 ближайших городов.');
+            checkbox.checked = false; // Отменяем выбор
+            return;
+        }
+        selectedCitiesMap.set(cityValue, true);
+    } else {
+        selectedCitiesMap.delete(cityValue);
+    }
+    
+    // Очищаем поле ввода, чтобы пользователь мог начать новый поиск
+    nearbyCityInput.value = ''; 
+    
+    // Вызов updateSelectedCityInput обновит плейсхолдер и список
+    updateSelectedCityInput(); 
+}
+
+/**
+ * Обновляет плейсхолдер, показывая выбранные города, и обновляет список чекбокса.
+ */
+function updateSelectedCityInput() {
+    const selectedCities = Array.from(selectedCitiesMap.keys());
+    
+    // Обновляем плейсхолдер, показывая количество выбранных городов.
+    if (selectedCities.length > 0) {
+        // Отображаем выбранные города в плейсхолдере
+        const selectedNames = selectedCities.join(', ');
+        nearbyCityInput.placeholder = `Выбрано: ${selectedNames} (${selectedCities.length}/3)`;
+    } else {
+        nearbyCityInput.placeholder = "Введите и выберите ближайшие города (1-3)";
+    }
+
+    // Проверка состояния required (требуется, если ничего не выбрано)
+    nearbyCityInput.required = selectedCities.length === 0;
+
+    // Обновляем список, используя текущий поисковый термин (который может быть пустым после выбора)
+    updateCityCheckboxList(getCurrentSearchTerm(nearbyCityInput.value)); 
+}
+
+
+/**
+ * Извлекает поисковый запрос из полного текста поля ввода (теперь это просто ввод).
+ */
+function getCurrentSearchTerm(fullValue) {
+    // Просто возвращаем весь текст из поля ввода.
+    return fullValue.trim();
+}
+
+
+// -----------------------------------------------------------------------------
+// III. Логика Toggling списка городов
+// -----------------------------------------------------------------------------
+
+// 1. Обработчик для ПОИСКА
+nearbyCityInput.addEventListener('input', (e) => {
+    const searchTerm = getCurrentSearchTerm(e.target.value);
+    updateCityCheckboxList(searchTerm);
+});
+
+// 2. Обработчик для TOGGLE (ОТКРЫТЬ/ЗАКРЫТЬ) по клику на поле ввода
+nearbyCityInput.addEventListener('click', (e) => {
+    e.stopPropagation();
+    
+    if (cityCheckboxList.style.display === 'block') {
+        cityCheckboxList.style.display = 'none';
+    } else {
+        // Если список скрыт, открываем его и обновляем список городов
+        const searchTerm = getCurrentSearchTerm(nearbyCityInput.value);
+        updateCityCheckboxList(searchTerm);
+        nearbyCityInput.focus();
+    }
+});
+
+
+// 3. Закрытие выпадающего списка при клике вне его
+document.addEventListener('click', (e) => {
+    const wrapper = document.querySelector('.city-wrapper'); 
+    
+    if (!wrapper || !cityCheckboxList) return; 
+
+    // Если клик был вне всего блока выбора города (wrapper) И список открыт, закрываем список
+    if (!wrapper.contains(e.target) && cityCheckboxList.style.display === 'block') {
+        cityCheckboxList.style.display = 'none';
+        nearbyCityInput.blur(); // Убираем фокус с поля
+    }
+});
+
+// -----------------------------------------------------------------------------
+// IV. Обновленная Логика Попапа и Заявок
+// -----------------------------------------------------------------------------
 
 // ==== Попап открытие/закрытие ====
 helpBtn.addEventListener('click', () => {
@@ -54,6 +249,11 @@ function closePopup() {
     closeBtn.replaceWith(closeBtn.cloneNode(true));
     sendBtn = popup.querySelector('#sendBtn');
     closeBtn = popup.querySelector('#closeBtn');
+    
+    // Скрываем список городов при закрытии попапа
+    if (cityCheckboxList) {
+        cityCheckboxList.style.display = 'none';
+    }
 }
 
 // ==== Функция открытия попапа ====
@@ -67,10 +267,16 @@ function openPopup(mode, key = null) {
     // Сброс полей для "Новой заявки"
     problemInput.value = '';
     commentsInput.value = '';
-    // Сброс полей ближайших городов
-    document.getElementById('nearbicity1').value = '';
-    document.getElementById('nearbicity2').value = '';
-    document.getElementById('nearbicity3').value = '';
+    
+    // Сброс выбранных городов и списка при открытии
+    selectedCitiesMap.clear(); // Очищаем выбранные города
+    if (nearbyCityInput) nearbyCityInput.value = ''; // Очищаем поле поиска
+    updateSelectedCityInput(); // Обновит плейсхолдер
+    if (cityCheckboxList) {
+        cityCheckboxList.innerHTML = '';
+        cityCheckboxList.style.display = 'none'; // Убеждаемся, что список изначально скрыт
+    }
+
 
     // Сброс обработчиков перед назначением новых
     sendBtn.onclick = null;
@@ -88,7 +294,6 @@ function openPopup(mode, key = null) {
         const requestStatusDiv = card.querySelector('.request-status');
         const commentsDiv = card.querySelector('.comments');
 
-        // Заполнение полей текущими значениями
         problemInput.value = requestStatusDiv.textContent.trim();
         commentsInput.value = commentsDiv.textContent.trim();
 
@@ -104,13 +309,12 @@ function openPopup(mode, key = null) {
                 alert('Проблема обязательна!');
                 return;
             }
-
+            
             try {
                 await db.ref('requests/' + key).update({
                     problem: newProblem,
                     comments: newComments
                 });
-                // Обновление карточки на экране
                 requestStatusDiv.textContent = newProblem;
                 commentsDiv.textContent = newComments;
                 closePopup();
@@ -128,43 +332,35 @@ function openPopup(mode, key = null) {
 // ==== Создание новой заявки ====
 async function handleNewRequest() {
     
-    // Получаем данные пользователя для проверки и получения userCityKey
     const userSnapshot = await db.ref('users/' + userId).once('value');
     const userData = userSnapshot.val();
 
-    // Проверяем наличие поля location (вместо cityKey), person и phone
     if (!userSnapshot.exists() || !userData.person || !userData.phone || !userData.location) {
         alert('Необходимо полностью заполнить профиль (Имя, Телефон, Населенный пункт) перед созданием заявки.');
         profileBtn.click();
         return;
     }
     
-    // Используем userData.location как ключ города
     const userCityKey = userData.location; 
 
     const problem = problemInput.value.trim();
     const comments = commentsInput.value.trim();
 
-    const city1 = document.getElementById('nearbicity1').value.trim();
-    const city2 = document.getElementById('nearbicity2').value.trim();
-    const city3 = document.getElementById('nearbicity3').value.trim();
-    
-    const nearbyCities = [city1, city2, city3].filter(c => c); 
+    // Использование выбранных городов из Map
+    const nearbyCities = Array.from(selectedCitiesMap.keys()); 
     
     // Проверка всех обязательных полей
-    if (!problem || !city1 || !city2 || !city3) {
-        alert('Заполните все обязательные поля (Проблема и 3 ближайших города)!');
+    if (!problem || nearbyCities.length === 0) {
+        alert('Заполните все обязательные поля (Проблема и выберите хотя бы 1 ближайший город)!');
         return;
     }
-
-    // Проверка на активную заявку ОТ ПОЛЬЗОВАТЕЛЯ (фильтрация уже по userId)
+    
     const snapshot = await db.ref('requests').orderByChild('userId').equalTo(userId).once('value');
     const now = Date.now();
     let hasActive = false;
 
     snapshot.forEach(childSnap => {
         const request = childSnap.val();
-        // ⚠️ ИЗМЕНЕНИЕ: Не проверяем город, так как ищем активные заявки ОТ ЭТОГО пользователя
         const createdTime = new Date(request.createdAt).getTime();
         if (now - createdTime < REQUEST_TIMEOUT_MS) hasActive = true;
     });
@@ -179,6 +375,7 @@ async function handleNewRequest() {
     closePopup();
 }
 
+
 // Функции-обертки для использования в inline onclick
 function editCard(key) { openPopup('edit', key); }
 
@@ -188,7 +385,6 @@ function deleteCard(key) {
     db.ref('requests/' + key).once('value')
         .then(snapshot => {
             const requestData = snapshot.val();
-            // Проверка, что удаляется только своя заявка
             if (!requestData || requestData.userId !== userId) {
                 alert('Вы не можете удалить чужую заявку или заявка не найдена.');
                 return;
@@ -218,7 +414,6 @@ function displayRequestCard(requestData, key) {
     const timeElapsed = Date.now() - createdTime;
     const remaining = Math.max(0, REQUEST_TIMEOUT_MS - timeElapsed);
 
-    // Удаление просроченной заявки
     if (remaining === 0 && timeElapsed > REQUEST_TIMEOUT_MS) {
         if (requestData.userId === userId) db.ref('requests/' + key).remove().catch(console.error);
         return;
@@ -227,7 +422,6 @@ function displayRequestCard(requestData, key) {
     const card = document.createElement('div');
     card.classList.add('request-card');
 
-    // Получение списка ближайших городов
     const nearbyCities = Array.isArray(requestData.nearbyCities) ? requestData.nearbyCities.join(', ') : '';
 
     card.innerHTML = `
@@ -256,13 +450,10 @@ function displayRequestCard(requestData, key) {
 
     const chatBtn = card.querySelector('.request-status-btn button');
     chatBtn.onclick = () => {
-        // Предполагается, что CHANNEL_ID определен
         const chatLink = `https://t.me/${CHANNEL_ID}?thread=${key}`;
         window.open(chatLink, "_blank");
     };
 
-    // Кнопки редактирования/удаления только для своих заявок
-    // Эта проверка остается актуальной, так как мы отображаем только свои заявки
     if (requestData.userId === userId) {
         const cardHeader = card.querySelector('.card-header');
         const settingsWrapper = document.createElement('div');
@@ -284,7 +475,6 @@ function displayRequestCard(requestData, key) {
     requestsContainer.querySelectorAll('.request-card.empty').forEach(e => e.remove());
     requestsContainer.prepend(card);
 
-    // Установка таймера на удаление заявки
     if (remaining > 0) {
         setTimeout(async () => {
             if (requestData.userId === userId) await db.ref('requests/' + key).remove().catch(console.error);
@@ -299,7 +489,6 @@ async function createRequestCard(userData, problem, comments, userId, userCityKe
     const newRef = db.ref('requests').push();
     const key = newRef.key;
 
-    // Формируем объект данных заявки
     const requestData = {
         userId,
         person: userData.person,
@@ -307,7 +496,6 @@ async function createRequestCard(userData, problem, comments, userId, userCityKe
         problem,
         comments,
         cityKey: userCityKey,
-        // Проверяем nearbyCities, чтобы не было undefined
         nearbyCities: nearbyCities ?? null,
         createdAt: new Date().toISOString()
     };
@@ -315,7 +503,6 @@ async function createRequestCard(userData, problem, comments, userId, userCityKe
     sendBtn.disabled = true;
 
     try {
-        // Сохраняем заявку в Firebase
         await newRef.set(requestData);
         console.log('✅ Заявка успешно сохранена в Firebase');
     } catch (error) {
@@ -328,44 +515,30 @@ async function createRequestCard(userData, problem, comments, userId, userCityKe
 }
 
 
-// ==== ЗАГРУЗКА ЗАЯВОК ПОЛЬЗОВАТЕЛЯ (фильтр по userId) ====
-/**
- * Загружает и отображает только заявки, созданные текущим пользователем.
- * (На основе логики requests.js)
- */
+// ==== ЗАГРУЗКА ЗАЯВОК ПОЛЬЗОВАТЕЛЯ ====
 async function loadRequests() {
     
-    // Проверка наличия userId
     if (!userId) {
-        // Отображение сообщения об ошибке и отключение кнопки "Помощь"
         requestsContainer.innerHTML = '<div class="request-card empty">Ошибка: Пользователь не авторизован.</div>';
-        // Предполагается, что helpBtn доступен
         if (typeof helpBtn !== 'undefined') helpBtn.disabled = true;
         return;
     }
 
-    // Включение кнопки "Помощь" (если она была отключена)
     if (typeof helpBtn !== 'undefined') helpBtn.disabled = false; 
 
-    // Индикатор загрузки
     requestsContainer.innerHTML = '<div class="request-card empty">Загрузка ваших заявок...</div>';
     
-    // 🛑 Ключевой шаг: Запрос к Firebase с фильтрацией по текущему userId
     db.ref('requests').orderByChild('userId').equalTo(userId).once('value')
         .then(snapshot => {
-            requestsContainer.innerHTML = ''; // Очистка индикатора загрузки
+            requestsContainer.innerHTML = ''; 
             const data = snapshot.val();
             
             if (!data) {
-                // Если нет данных, отображаем пустую карточку
                 checkAndAddEmptyCard();
                 return;
             }
             
-            // Вывод в обратном порядке (самые новые сверху), как в requests.js
             Object.entries(data).reverse().forEach(([key, request]) => displayRequestCard(request, key));
-            
-            // Проверка и добавление пустой карточки, если все заявки, например, просрочены и удалены
             checkAndAddEmptyCard(); 
         })
         .catch(error => {
@@ -374,11 +547,6 @@ async function loadRequests() {
         });
 }
 
-// Вызов функции при загрузке
-loadRequests();
-
-// ⚠️ ОБНОВЛЕНИЕ: Перенаправляем глобальный вызов на новую функцию
-window.loadRequests = loadUserRequests; 
 
 // ==== Автокапитализация ====
 function capitalizeFirstAndTrim(element) {
@@ -390,3 +558,11 @@ function capitalizeFirstAndTrim(element) {
 }
 capitalizeFirstAndTrim(problemInput);
 capitalizeFirstAndTrim(commentsInput);
+
+// =============================================================================
+// V. Инициализация при загрузке
+// =============================================================================
+
+loadRequests();
+loadAllCities(); // Загружаем список городов из Firebase
+window.loadRequests = loadRequests;

@@ -98,21 +98,20 @@ body {
 }
 
 /* Статус сверху */
-/* Статус сверху */
 .request-status {
-    flex-grow: 1;            /* Занимает все доступное пространство */
-    text-align: center;      /* Центрируем текст внутри */
-    font-weight: bold;       /* Раскомментировал, если нужен жирный текст */
-    font-size: 24px;         /* Раскомментировал, если нужен размер текста */
-    color: #d9534f;          /* Цвет текста */
-    margin-bottom: 0;        /* Убираем отступ снизу */
+    flex-grow: 1; 
+    text-align: center; 
+    font-weight: bold;
+    font-size: 24px;
+    color: #d9534f;
+    margin-bottom: 0;
 }
 
 /* .card-header уже содержит необходимые свойства */
 .card-header {
     display: flex;
-    justify-content: space-between; /* Баланс между элементами слева и справа */
-    align-items: center;            /* Вертикальное выравнивание по центру */
+    justify-content: space-between; 
+    align-items: center; 
 }
 
 
@@ -139,7 +138,7 @@ body {
 }
 
 .car {
-  margin-left: auto; /* прижимаем вправо */
+  margin-left: auto;
 }
 
 .car-plate {
@@ -160,8 +159,8 @@ body {
   font-size: 14px;
   color: #555;
   line-height: 1.4;
-    margin-left: auto; /* прижимаем вправо */
-      margin-right: auto; /* прижимаем вправо */
+    margin-left: auto; 
+    margin-right: auto;
 }
 
 /* Дата создания */
@@ -225,9 +224,9 @@ body {
   font-size: 14px;
 }
 .divider {
-  border: none;           /* убираем стандартную рамку */
-  border-top: 1px solid #ddd; /* тонкая линия */
-  margin: 1px 0;          /* отступы сверху и снизу */
+  border: none;
+  border-top: 1px solid #ddd;
+  margin: 1px 0;
 }
 
 
@@ -277,7 +276,7 @@ body {
   transform: translateY(0);
 }
 
-/* Поля ввода */
+/* Поля ввода (общие стили) */
 input, textarea {
   margin: 5px 0px;
   width: 100%;
@@ -293,14 +292,15 @@ textarea {
   resize: vertical; /* можно менять высоту */
 }
 
+input:focus, textarea:focus {
+  outline: none;
+  border-color: #007aff; /* Акцентный цвет при фокусе */
+  box-shadow: 0 0 0 3px rgba(0, 122, 255, 0.2); /* Легкая тень */
+}
+
 input:invalid, textarea:invalid {
   border: 0.5px solid red;
   background-color: #fff3f3;
-}
-
-input:invalid:focus, textarea:focus {
-  outline: none;
-  box-shadow: 0 0 10px rgb(0,0,0);
 }
 
 /* Кнопки */
@@ -313,13 +313,13 @@ input:invalid:focus, textarea:focus {
 
 .request-card .request-status-btn {
   display: flex;
-  justify-content: center; /* по горизонтали по центру */
+  justify-content: center; 
   margin-top: 10px;
 }
 
 .bottom-line {
   display: flex;
-  justify-content: space-between; /* время слева, кнопка справа */
+  justify-content: space-between; 
   align-items: center;
   height: 25px;
 }
@@ -338,16 +338,11 @@ button {
 
 /*
  * Стили для контейнера кнопки "Помочь"
- * Предполагается, что родительский элемент (например, карточка)
- * имеет установленное позиционирование: position: relative;
  */
 .request-status-btn {
-    /* Фиксированное позиционирование кнопки в правом нижнем углу блока-родителя */
     position: absolute; 
-    bottom: 10px;        /* Отступ от нижнего края */
-    right: 15px;         /* Отступ от правого края */
-    
-    /* Обеспечивает, что контейнер кнопки не влияет на макет, пока кнопка позиционирована абсолютно */
+    bottom: 10px;
+    right: 15px;
     display: inline-block; 
 }
 
@@ -355,47 +350,37 @@ button {
  * Стили самой кнопки "Помочь"
  */
 .request-status-btn button {
-    /* Базовые стили */
     padding: 10px 60px;
     font-size: 12px;
     font-weight: 600;
     cursor: pointer;
-    
-    /* Визуальный стиль (как на изображении) */
-    background-color: #00bfff; /* Яркий синий цвет */
-    color: white;             /* Белый текст */
-    border: none;             /* Убираем стандартную рамку */
-    border-radius: 8px;       /* Скругленные углы */
-    
-    /* Эффект при наведении (для лучшего UX) */
+    background-color: #00bfff;
+    color: white; 
+    border: none;
+    border-radius: 8px;
     transition: background-color 0.2s ease;
 }
 
 
 .request-status-btn button:active {
-    background-color: #004085; /* Еще темнее при нажатии */
+    background-color: #004085;
 }
 
 .request-card {
-    /* Должен быть относительным, чтобы позиционировать меню настроек */
     position: relative; 
-    /* Другие стили карточки... */
 }
 
 .card-header {
-    /* Используем Flexbox для размещения заголовка и кнопки на одной линии */
     display: flex;
-    justify-content: space-between; /* Раскидывает элементы по краям */
+    justify-content: space-between; 
     align-items: center;
-    /* Другие стили заголовка... */
 }
 
 .card-settings {
-    position: relative; /* Относительное позиционирование для выпадающего меню */
+    position: relative; 
 }
 
 .settings-btn {
-    /* Стилизация самой кнопки (многоточия) */
     background: none;
     border: none;
     font-size: 20px;
@@ -405,57 +390,55 @@ button {
 }
 
 .settings-menu {
-    /* Стилизация выпадающего меню */
     position: absolute;
-    top: 100%; /* Располагает меню сразу под кнопкой */
+    top: 100%; 
     right: 0;
-    background-color: rgb(0, 0, 0); /* Фон меню */
-    border: 1px solid #000000;
-    border-radius: 4px;
-    z-index: 100; /* Гарантирует, что меню будет над другими элементами */
+    background-color: #fff; 
+    border: 1px solid #eee;
+    border-radius: 8px;
+    z-index: 100;
     padding: 5px;
-    box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
     
-    /* Стили для вертикального расположения кнопок внутри меню */
     display: flex; 
     flex-direction: column;
-    min-width: 120px; /* Чтобы кнопки были читаемы */
+    min-width: 120px; 
 }
 
 .settings-menu button {
-    /* Стили кнопок внутри меню */
     background: none;
     border: none;
     padding: 8px 10px;
     text-align: left;
     cursor: pointer;
+    color: #333;
+    font-size: 14px;
 }
 
 .settings-menu button:hover {
-    background-color: #f0f0f0;
+    background-color: #f5f5f5;
 }
 
 /* Также исправьте стиль для самой кнопки многоточия (.settings-btn) */
 .request-card .settings-btn {
-    background: none; /* Убираем синий фон глобальной кнопки */
+    background: none;
     border: none;
     padding: 0 5px;
     line-height: 1;
     font-size: 20px;
-    color: #000000; /* Устанавливаем цвет для точек */
-    border-radius: 0; /* Сбрасываем радиус, если нужно */
+    color: #555; /* Более нейтральный цвет для точек */
+    border-radius: 0; 
 }
 
-/* Стиль для полей ввода (подразумевая, что у вас есть стили, как на картинке) */
+/* Стиль для полей ввода в профиле */
 #edit-profile-form input[type="text"],
 #edit-profile-form input[type="tel"] {
-    /* Пример стилей для полей */
     width: 100%;
     padding: 15px;
     margin-bottom: 10px;
     border: 1px solid #ccc;
     border-radius: 8px;
-    box-sizing: border-box; /* Важно для padding */
+    box-sizing: border-box;
     font-size: 16px;
 }
 
@@ -470,13 +453,13 @@ button {
 /* Контейнер для кнопок "Сохранить" и "Отменить" */
 .popup-actions {
     display: flex;
-    justify-content: space-between; /* Для расположения кнопок по краям */
+    justify-content: space-between;
     gap: 10px;
     margin-top: 20px;
 }
 
 .popup-actions button {
-    flex-grow: 1; /* Чтобы кнопки занимали равное пространство */
+    flex-grow: 1;
     padding: 15px;
     border: none;
     border-radius: 12px;
@@ -487,7 +470,7 @@ button {
 
 /* Основная кнопка "Сохранить" */
 .primary-btn {
-    background-color: #007bff; /* Яркий синий, как на картинке */
+    background-color: #007bff;
     color: #fff;
 }
 
@@ -497,7 +480,7 @@ button {
 
 /* Вторичная кнопка "Отменить" */
 .secondary-btn {
-    background-color: #f0f0f0; /* Светлый фон */
+    background-color: #f0f0f0;
     color: #333;
     border: 1px solid #ccc;
 }
@@ -534,33 +517,9 @@ button {
   background: #0066d3;
 }
 
-/* ===== Выпадающий список ===== */
+/* ===== Выпадающий список ===== (Оставлено для совместимости) */
 .dropdown {
-
   position: relative;
-}
-
-.dropdown-btn {
-  background: #f1f3f4;
-  border: none;
-  border-radius: 8px;
-  padding: 8px;
-  font-size: 15px;
-  color: #333;
-  cursor: pointer;
-  font-weight: 500;
-  position: relative;
-  min-width: 160px;
-}
-
-.dropdown-btn::after {
-  content: "▾";
-  position: absolute;
-  right: 15px;
-  top: 50%;
-  transform: translateY(-50%);
-  font-size: 13px;
-  color: #666;
 }
 
 .dropdown-menu {
@@ -618,76 +577,133 @@ button {
   color: #fff;
 }
 
-/* --- Контейнер и поле ввода --- */
+/* ----------------------------------------------------------------- */
+/* === СТИЛИ ДЛЯ ИНПУТА С ПОИСКОМ И ЧЕКБОКСАМИ (Modern Look) === */
+/* ----------------------------------------------------------------- */
 
 .city-wrapper {
-    position: relative; 
-    display: flex; /* Обеспечивает, что дочерние элементы выстраиваются в ряд */
-    align-items: center;
-}
-
-.person-city {
-    flex-grow: 1; 
-    padding-right: 35px !important; /* Важно: отступ для стрелки */
-    /* Остальные ваши стили для input */
-}
-
-/* --- Стилизация и анимация стрелки --- */
-
-.city-dropdown-icon {
-    position: absolute;
-    right: 10px;
-    width: 18px;
-    height: 18px;
-    fill: #555;
-    transition: transform 0.3s ease; 
-    cursor: pointer; /* чтобы курсор менялся */
-    pointer-events: auto; /* клики теперь проходят */
-}
-
-
-/* Стиль при открытом списке (класс добавляется через JS) */
-.city-dropdown-icon.rotated {
-    transform: rotate(180deg); 
-    fill: #007bff; /* Можно изменить цвет при активации */}
-
-.city-wrapper {
-  position: relative;
+  position: relative; 
   width: 100%;
 }
 
+/* --- Стилизация и анимация стрелки --- */
+.city-dropdown-icon {
+    position: absolute;
+    right: 15px; 
+    top: 50%;
+    transform: translateY(-50%);
+    width: 20px;
+    height: 20px;
+    fill: #999;
+    transition: transform 0.3s ease, fill 0.3s ease; 
+    cursor: pointer; 
+    pointer-events: none; 
+}
+
+/* Стиль при открытом списке (класс добавляется через JS) */
+.city-wrapper:focus-within .city-dropdown-icon {
+    fill: #007aff;
+    transform: translateY(-50%) rotate(180deg); 
+}
+
+/* --- Стили для выпадающего списка (UL) --- */
 .city-list {
   position: absolute;
-  top: 100%;
+  top: calc(100% + 5px);
   left: 0;
   right: 0;
   background: white;
-  border: 1px solid #ccc;
-  border-top: none;
-  max-height: 180px;
+  border: 1px solid #eee;
+  border-radius: 12px;
+  box-shadow: 0 6px 20px rgba(0,0,0,0.1);
+  max-height: 250px;
   overflow-y: auto;
-  z-index: 10;
+  z-index: 100; 
   display: none;
   list-style: none;
   margin: 0;
-  padding: 0;
+  padding: 8px 0;
 }
 
-.city-list li {
-  padding: 8px 10px;
-  cursor: pointer;
+/* --- Стили для элемента списка (LI) и чекбокса --- */
+
+.city-list .city-item {
+    display: flex;
+    align-items: center;
+    /* Разносим элементы по краям: метку влево, чекбокс вправо */
+    justify-content: space-between; 
+    padding: 10px 15px;
+    cursor: pointer;
+    transition: background-color 0.15s;
+    user-select: none;
 }
 
-.city-list li:hover {
-  background-color: #f0f0f0;
+/* При наведении/клике - эффект */
+.city-list .city-item:hover {
+    background-color: #f5f5f5;
 }
 
+.city-list .city-item.no-results {
+    color: #999;
+    font-style: italic;
+    cursor: default;
+    background: none;
+    text-align: center;
+    justify-content: center;
+}
 
+.city-list input[type="checkbox"] {
+    /* Кастомный стиль чекбокса */
+    -webkit-appearance: none;
+    appearance: none;
+    width: 20px;
+    height: 20px;
+    border: 2px solid #ccc;
+    border-radius: 6px;
+    /* Отступы: убираем справа, добавляем слева, чтобы оттолкнуться от метки */
+    margin-right: 0;
+    margin-left: 12px; 
+    position: relative;
+    cursor: pointer;
+    background-color: #fff;
+    flex-shrink: 0; 
+    transition: all 0.2s ease;
+    
+    /* 1. Назначаем порядок Flexbox для размещения справа */
+    order: 2;
+}
 
+.city-list input[type="checkbox"]:checked {
+    border-color: #007aff;
+    background-color: #007aff;
+}
 
+.city-list input[type="checkbox"]:checked::after {
+    /* Стиль для галочки */
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 4px;
+    height: 8px;
+    border: solid white;
+    border-width: 0 2px 2px 0;
+transform: translate(-3px, -6px) rotate(45deg);
+}
 
+.city-list label {
+    /* 2. Назначаем порядок Flexbox для размещения слева */
+    order: 1; 
+    flex-grow: 1; 
+    cursor: pointer;
+    font-size: 16px;
+    color: #333;
+    line-height: 1.2;
+}
 
-
+/* ----------------------------------------------------------------- */
+/* === КОНЕЦ СТИЛЕЙ ЧЕКБОКСОВ === */
+/* ----------------------------------------------------------------- */
 
 
 /* === Адаптив для маленьких экранов === */
@@ -727,4 +743,3 @@ button {
     justify-content: flex-start;
   }
 }
-

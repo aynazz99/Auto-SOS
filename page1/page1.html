@@ -30,34 +30,13 @@
   <div class="popup-content">
     <div class="request-status">Новая заявка на помощь</div>
     
+    <div class="city-wrapper city-checkbox-select">
+      <input type="text" id="nearbycity-input" placeholder="Выберите ближайшие города (1-3)" required autocomplete="off">
+      <ul id="city-checkbox-list" class="city-list" style="display: none;">
+        </ul>
+    </div>
     <input type="text" id="problem" placeholder="Какая проблема? (коротко)" autocomplete="off" maxlength="25" required>
     <textarea id="comments" placeholder="Комментарии (необязательно)" autocomplete="off" maxlength="120" rows="4"></textarea>
-
-    <!-- Три выпадающих списка -->
-    <div class="city-wrapper">
-      <input type="text" id="nearbicity1" name="location1" placeholder="Ближайший город 1" autocomplete="off" required>
-      <svg class="city-dropdown-icon" viewBox="0 0 24 24" width="20" height="20">
-        <path d="M7 10l5 5 5-5z"/>
-      </svg>
-      <ul id="city-list-1" class="city-list"></ul>
-    </div>
-
-    <div class="city-wrapper">
-      <input type="text" id="nearbicity2" name="location2" placeholder="Ближайший город 2" autocomplete="off" required>
-      <svg class="city-dropdown-icon" viewBox="0 0 24 24" width="20" height="20">
-        <path d="M7 10l5 5 5-5z"/>
-      </svg>
-      <ul id="city-list-2" class="city-list"></ul>
-    </div>
-
-    <div class="city-wrapper">
-      <input type="text" id="nearbicity3" name="location3" placeholder="Ближайший город 3" autocomplete="off" required>
-      <svg class="city-dropdown-icon" viewBox="0 0 24 24" width="20" height="20">
-        <path d="M7 10l5 5 5-5z"/>
-      </svg>
-      <ul id="city-list-3" class="city-list"></ul>
-    </div>
-
     <div class="button-row">
       <button id="sendBtn">Отправить</button>
       <button id="closeBtn">Закрыть</button>
